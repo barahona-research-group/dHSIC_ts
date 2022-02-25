@@ -5,6 +5,7 @@ import networkx as nx
 from tqdm import tqdm
 import os
 import warnings
+
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 import pandas as pd
@@ -29,6 +30,7 @@ def make_K_list(X_list, n_samples, n_nodes):
         pairwise_kernels(X_list[i], metric='rbf', gamma=0.5 / (width(X_list[i]) ** 2)) for i in range(n_nodes))
     return k_list
 
+
 # data preparation
 groups_prep_g = {}
 groups_prep_g_K = {}
@@ -49,3 +51,24 @@ for group in groups:
 
         K_matrix = pairwise_kernels(g_array, metric='rbf', gamma=0.5 / (width(g_array) ** 2))
         groups_prep_g_K[group][g] = K_matrix
+
+
+def make_iid():
+    """
+    Returns iid data that has higher-order interactions (from Bjorn Bottcher's paper)
+    """
+    return
+
+
+def make_stat():
+    """
+    Returns stationary time series data that has higher-order interactions
+    """
+    return
+
+
+def make_nonstat():
+    """
+    Returns nonstationary time series data that has higher-order interactions
+    """
+    return

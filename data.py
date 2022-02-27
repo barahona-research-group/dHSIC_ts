@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 import pandas as pd
 import copy
-
+from sklearn.metrics import pairwise_distances, pairwise_kernels
 
 def width(Z):
     """
@@ -31,26 +31,29 @@ def make_K_list(X_list, n_samples, n_nodes):
     return k_list
 
 
-# data preparation
-groups_prep_g = {}
-groups_prep_g_K = {}
+def compute_kernel():
+    # data preparation
+    groups_prep_g = {}
+    groups_prep_g_K = {}
 
-for group in groups:
-    print(group)
+    for group in groups:
+        print(group)
 
-    groups_prep_g[group] = np.empty(17, dtype=object)
-    groups_prep_g_K[group] = np.empty(17, dtype=object)
+        groups_prep_g[group] = np.empty(17, dtype=object)
+        groups_prep_g_K[group] = np.empty(17, dtype=object)
 
-    for g, goal in enumerate(goals):
-        g_list = []
-        for country in groups[group].dropna():
-            g_list.append(np.asarray(goals_values_i[country][g]))
+        for g, goal in enumerate(goals):
+            g_list = []
+            for country in groups[group].dropna():
+                g_list.append(np.asarray(goals_values_i[country][g]))
 
-        g_array = np.asarray(g_list)
-        groups_prep_g[group][g] = g_array
+            g_array = np.asarray(g_list)
+            groups_prep_g[group][g] = g_array
 
-        K_matrix = pairwise_kernels(g_array, metric='rbf', gamma=0.5 / (width(g_array) ** 2))
-        groups_prep_g_K[group][g] = K_matrix
+            K_matrix = pairwise_kernels(g_array, metric='rbf', gamma=0.5 / (width(g_array) ** 2))
+            groups_prep_g_K[group][g] = K_matrix
+
+    return groups_prep_g, groups_prep_g_K
 
 
 def make_iid():

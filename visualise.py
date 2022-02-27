@@ -74,27 +74,27 @@ def plot_whole_hx(H, cmaps_list, name, shortname):
 # H_af = hnx.Hypergraph(edges_af)
 # plot_whole_hx(H_af, cmaps_list, "Africa", "AF")
 
-def get_adjacency(H):
-    """ Construct weighted adjacency matrix for HyperGraph H
-
-    Arguments
-    H : Hypernetx hypergraph object
-
-    """
-
-    incidence = H.incidence_matrix().toarray()
-
-    # hyperedge adjacency matrix
-    C = np.matmul(incidence.T, incidence)
-    A = np.matmul(incidence, incidence.T)
-
-    R = np.matmul(incidence, np.matmul(np.diag(np.diag(C)), incidence.T))
-
-    # defining transition matrix
-    adj = R - A
-    np.fill_diagonal(adj, 0)
-
-    return adj
+# def get_adjacency(H):
+#     """ Construct weighted adjacency matrix for HyperGraph H
+#
+#     Arguments
+#     H : Hypernetx hypergraph object
+#
+#     """
+#
+#     incidence = H.incidence_matrix().toarray()
+#
+#     # hyperedge adjacency matrix
+#     C = np.matmul(incidence.T, incidence)
+#     A = np.matmul(incidence, incidence.T)
+#
+#     R = np.matmul(incidence, np.matmul(np.diag(np.diag(C)), incidence.T))
+#
+#     # defining transition matrix
+#     adj = R - A
+#     np.fill_diagonal(adj, 0)
+#
+#     return adj
 
 
 def compute_and_plot_eigenvector_hypergraph(g, pos, n_labels, weight=True):
@@ -126,6 +126,7 @@ colors_SDG = {1:(229/255, 36/255, 59/255), 2:(221/255, 166/255, 58/255), 3:(76/2
               10: (221/255, 19/255, 103/255), 11: (253/255, 157/255, 36/255), 12:(191/255, 139/255, 46/255),
               13: (63/255, 126/255, 68/255), 14: (10/255, 151/255, 217/255), 15: (86/255, 192/255, 43/255),
               16: (0, 104/255, 157/255), 17:(25/255, 72/255, 106/255) }
+
 
 def plot_eig_centralities_reorg(G, n_labels, name, shortname, colors=colors_SDG):
     degree = nx.eigenvector_centrality(G, weight='weight')

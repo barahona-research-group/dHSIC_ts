@@ -91,7 +91,6 @@ def joint_independence_test_MC(k_list, n_perms=5000, alpha=0.05):
     reject: 1 if null rejected, 0 if null not rejected
 
     """
-
     n_nodes = len(k_list)
     n_samples = k_list[0].shape[0]
 
@@ -101,97 +100,38 @@ def joint_independence_test_MC(k_list, n_perms=5000, alpha=0.05):
 
     reject = int(stat > critical_value)
 
-    return reject
+    return stat, reject
 
 
+def compute_all_HSIC(data, num_var):
+    """Compute """
+    HSIC_dict = {}
+    # compute HSIC(X,X)....HSIC(X,X,X,X,X) in one fn
+    for i in range(2, 5+1):
+        HSIC_dict[str(i)] = []
+        HSICs = []
+        for j in np.arange(num_var):
+            k_list = [list([data[j] for _ in range(i)])]
+            HSIC = compute_dHSIC(k_list)
+            HSICs.append(HSIC)
+        HSIC_dict[str(i)] = HSICs
 
-def compute_HSIC_XX(group, groups_data, iterable):
-    """Compute HSIC(X,X) for given variable X"""
-    group_arr = groups_data[group]
-    K = len(iterable)
-    indexes = np.arange(K)
-
-    # compute individual HSIC_XX
-    HSIC_XX_list = []
-    for i in indexes:
-        k_list_XX = list((group_arr[i], group_arr[i]))
-        HSIC_XX = compute_dHSIC(k_list_XX)
-        HSIC_XX_list.append(HSIC_XX)
-
-    return HSIC_XX_list
-
-# HSIC_XX = {}
-# HSIC_XX['Europe'] = compute_HSIC_XX('Europe', continents_prep_g_K, goals)
-# HSIC_XX['Asia'] = compute_HSIC_XX('Asia', continents_prep_g_K, goals)
-# HSIC_XX['Africa'] = compute_HSIC_XX('Africa', continents_prep_g_K, goals)
-# HSIC_XX['Americas'] = compute_HSIC_XX('Americas', continents_prep_g_K, goals)
-
-def compute_dHSIC_XXX(group, groups_data, iterable):
-    """Compute dHSIC(X,X,X) for variable X"""
-    group_arr = groups_data[group]
-    K = len(iterable)
-    indexes = np.arange(K)
-
-    # compute individual HSIC_XXX
-    HSIC_XXX_list = []
-    for i in indexes:
-        k_list_XXX = list((group_arr[i], group_arr[i], group_arr[i]))
-        HSIC_XXX = compute_dHSIC(k_list_XXX)
-        HSIC_XXX_list.append(HSIC_XXX)
-
-    return HSIC_XXX_list
+    return HSIC_dict
 
 
-def compute_dHSIC_XXXX(group, groups_data, iterable):
-    """Compute dHSIC(X,X,X,X) for variable X"""
-    group_arr = groups_data[group]
-    K = len(iterable)
-    indexes = np.arange(K)
-
-    # compute individual HSIC_XXXX
-    HSIC_XXXX_list = []
-    for i in indexes:
-        k_list_XXXX = list((group_arr[i], group_arr[i], group_arr[i], group_arr[i]))
-        HSIC_XXXX = compute_dHSIC(k_list_XXXX)
-        HSIC_XXXX_list.append(HSIC_XXXX)
-
-    return HSIC_XXXX_list
-
-
-def compute_dHSIC_XXXXX(group, groups_data, iterable):
-    """Compute dHSIC(X,X,X,X,X) for variable X"""
-    group_arr = groups_data[group]
-    K = len(iterable)
-    indexes = np.arange(K)
-
-    # compute individual HSIC_XXXX
-    HSIC_XXXXX_list = []
-    for i in indexes:
-        k_list_XXXXX = list((group_arr[i], group_arr[i], group_arr[i], group_arr[i], group_arr[i]))
-        HSIC_XXXXX = compute_dHSIC(k_list_XXXXX)
-        HSIC_XXXXX_list.append(HSIC_XXXXX)
-
-    return HSIC_XXXXX_list
-
-
-def dHSIC_links_MC_norm(group, groups_data, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
-    # For given dictionary groups_data, take nd.array corresponding to group
-    # ie. continents_prep_g_K['Europe']
-    group_arr = groups_data[group]
-
+def dHSIC_links_MC_norm(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
     K = len(iterable)  # number of total variables (17 goals, 76 targets)
     edges = {}  # initialize dictionary with edges according to dependencies found
     Adj2 = np.zeros((K, K))  # initialize KxK adjacency matrix for d=2
     d = 2  # initial number of variables for dHSIC
     e = 0
+    HSICs_all = compute_all_HSIC(group_arr, len(iterable))
 
     indexes = np.arange(K)  # create vector corresponding to indexes of iterable
     # find all possible d-combinations of indexes without order
     g_combinations = list(combinations_tuple(indexes, d))
 
-    weights_3 = {}
-    weights_4 = {}
-    weights_5 = {}
+    weights = {}
     # iterate until no possible combinations of independent variables are left
     while len(g_combinations) > 0:
         print("combinations: ", d)
@@ -215,31 +155,19 @@ def dHSIC_links_MC_norm(group, groups_data, iterable, stop_after_2=False, n_perm
                 f += 1
                 edges[e] = tuple(iterable[i] for i in comb)  # add edge to graph according to dependency found
 
-                ##### COMPUTE NORMALISATION
-                ### For each size choose corresponding dictionary with the pre-computed values of dHSIC(X,...,X)
-                ### for variable X.
+                # COMPUTE NORMALISATION
+                HSIC_XX = HSICs_all[str(d)]
+                for n in range(d):
+                    mult = 1
+                    mult = mult * HSIC_XX[comb[n]]
+                HSIC_norm = dHSIC_val / mult ** (1 / d)
+
                 if d == 2:
-                    HSIC_norm = dHSIC_val / np.sqrt(HSIC_XX[group][comb[0]] * HSIC_XX[group][comb[1]])
                     Adj2[comb[0], comb[1]] = HSIC_norm
                     Adj2[comb[1], comb[0]] = HSIC_norm
 
-                if d == 3:
-                    HSIC_norm = dHSIC_val / (
-                                HSIC_XXX[group][comb[0]] * HSIC_XXX[group][comb[1]] * HSIC_XXX[group][comb[2]]) ** (
-                                            1 / d)
-                    weights_3[comb] = HSIC_norm  # add to dictionary of weights
-
-                if d == 4:
-                    HSIC_norm = dHSIC_val / (
-                                HSIC_XXXX[group][comb[0]] * HSIC_XXXX[group][comb[1]] * HSIC_XXXX[group][comb[2]] *
-                                HSIC_XXXX[group][comb[3]]) ** (1 / d)
-                    weights_4[comb] = HSIC_norm
-
-                if d == 5:
-                    HSIC_norm = dHSIC_val / (
-                                HSIC_XXXX[group][comb[0]] * HSIC_XXXX[group][comb[1]] * HSIC_XXXX[group][comb[2]] *
-                                HSIC_XXXX[group][comb[3]] * HSIC_XXXX[group][comb[4]]) ** (1 / d)
-                    weights_5[comb] = HSIC_norm
+                else:
+                    weights[str(d)][str(comb)] = HSIC_norm
 
         print("Edges found with ", d, "nodes: ", f)
 
@@ -268,21 +196,4 @@ def dHSIC_links_MC_norm(group, groups_data, iterable, stop_after_2=False, n_perm
                     g_combinations.remove(comb_n)  # do not consider such combination
                     break
 
-    return edges, Adj2, weights_3, weights_4, weights_5
-
-
-def compute_weighted_matrix(group, groups_data, Adj):
-    """For given adjacency matrix, compute weights corresponding to normalisation of dHSIC"""
-    Adj_w = copy.deepcopy(Adj)
-    (a, b) = Adj.shape
-
-    group_arr = groups_data[group]
-
-    for i in range(17):
-        for j in range(17):
-            if Adj[i, j] == 1.0:
-                k_list = [group_arr[i], group_arr[j]]
-                val = compute_dHSIC(k_list)
-                Adj_w[i, j] = val / np.sqrt(HSIC_XX[group][i] * HSIC_XX[group][j])
-
-    return Adj_w
+    return edges, Adj2, weights

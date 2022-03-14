@@ -1,4 +1,5 @@
 # this is the file for making data object
+from dHSIC import compute_dHSIC
 import numpy as np
 from sklearn.metrics import pairwise_distances, pairwise_kernels
 import networkx as nx
@@ -8,9 +9,6 @@ import warnings
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=RuntimeWarning)
-import pandas as pd
-import copy
-from sklearn.metrics import pairwise_distances, pairwise_kernels
 
 
 def width(Z):
@@ -43,10 +41,11 @@ def compute_kernel(data, nodes):
     return prep_g, prep_g_K
 
 
-def make_iid(mode='multi-normal'):
+def iid_example(mode='multi-normal'):
     """
     Returns kernels of iid data that has higher-order interactions (from Bjorn Bottcher's notes)
     """
+    dHSIC_cor = []
     for s in np.linspace(0, 1, 201):
         if mode == 'multi-normal':
             # Multivariate normal
@@ -58,33 +57,40 @@ def make_iid(mode='multi-normal'):
             # Interpolated complete dependence
             mean = [0, 0, 0, 0]
             cov = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
-            for s in np.linspace(0, 1, 201):
-                x, x1, x2, x3 = np.random.multivariate_normal(mean, cov, 4000).T
-                d1, d2, d3 = s * x + (1 - s) * x1, s * x + (1 - s) * x2, s * x + (1 - s) * x3
+
+            x, x1, x2, x3 = np.random.multivariate_normal(mean, cov, 4000).T
+            d1, d2, d3 = s * x + (1 - s) * x1, s * x + (1 - s) * x2, s * x + (1 - s) * x3
 
         if mode == 'higher-order':
             # perturbed higher-order dependence
             mean = [0, 0, 0]
             cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-            for s in np.linspace(0, 1, 201):
-                x1, x2, x3 = np.random.multivariate_normal(mean, cov, 4000).T
 
-                y1 = np.random.binomial(n=1, p=0.5, size=4000)
-                y2 = np.random.binomial(n=1, p=0.5, size=4000)
-                y3 = np.asarray([int(y1[i] == y2[i]) for i in range(len(y1))])
+            x1, x2, x3 = np.random.multivariate_normal(mean, cov, 4000).T
 
-                d1, d2, d3 = y1 + (1 - s) * x1, y2 + (1 - s) * x2, y3 + (1 - s) * x3
+            y1 = np.random.binomial(n=1, p=0.5, size=4000)
+            y2 = np.random.binomial(n=1, p=0.5, size=4000)
+            y3 = np.asarray([int(y1[i] == y2[i]) for i in range(len(y1))])
 
-    K1 = pairwise_kernels(d1.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d1.reshape(-1, 1)) ** 2))
-    K2 = pairwise_kernels(d2.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d2.reshape(-1, 1)) ** 2))
-    K3 = pairwise_kernels(d3.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d3.reshape(-1, 1)) ** 2))
+            d1, d2, d3 = y1 + (1 - s) * x1, y2 + (1 - s) * x2, y3 + (1 - s) * x3
 
-    K_list_all = [K1, K2, K3]
-    K_list_1 = [K1, K1, K1]
-    K_list_2 = [K2, K2, K2]
-    K_list_3 = [K3, K3, K3]
+        K1 = pairwise_kernels(d1.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d1.reshape(-1, 1)) ** 2))
+        K2 = pairwise_kernels(d2.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d2.reshape(-1, 1)) ** 2))
+        K3 = pairwise_kernels(d3.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d3.reshape(-1, 1)) ** 2))
 
-    return K_list_all, K_list_1, K_list_2, K_list_3
+        K_list_all = [K1, K2, K3]
+        K_list_1 = [K1, K1, K1]
+        K_list_2 = [K2, K2, K2]
+        K_list_3 = [K3, K3, K3]
+
+        dHSIC_all = compute_dHSIC(K_list_all)
+        dHSIC_1 = compute_dHSIC(K_list_1)
+        dHSIC_2 = compute_dHSIC(K_list_2)
+        dHSIC_3 = compute_dHSIC(K_list_3)
+
+        dHSIC_cor.append(dHSIC_all / (dHSIC_1 * dHSIC_2 * dHSIC_3) ** (1 / 3))
+
+    return dHSIC_cor
 
 
 def make_stat():

@@ -5,6 +5,14 @@ import numpy as np
 def compute_dHSIC_statistics(k_list):
     """
     Computes the dHSIC statistic
+
+    Parameters
+    ----------
+    k_list: kernel list
+
+    Returns
+    -------
+
     """
     n_nodes = len(k_list)
     n_samples = k_list[0].shape[0]

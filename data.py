@@ -22,6 +22,10 @@ def width(Z):
 
 def compute_kernel(data, nodes):
     # data preparation
+    """
+    To do:
+    1. input data type = pandas dataframe
+    """
 
     num_nodes = nodes
     prep_g = np.empty(num_nodes, dtype=object)

@@ -3,8 +3,12 @@ import numpy as np
 
 def permutation_test(k_list, n_samples, n_nodes, stat_found, n_perms=5000, alpha=0.05):
     """
-    Approximates the null distribution by permutating all variables. Using Monte Carlo approximation.
+    Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
+
+    "to do:"
+    "1: include calc_stat as an input function"
+
     # initiating statistics
     statistics = np.zeros(n_perms)
 
@@ -46,6 +50,13 @@ def joint_independence_test(k_list, n_perms=5000, alpha=0.05):
     Returns:
     reject: 1 if null rejected, 0 if null not rejected
     """
+
+    """
+    To do:
+    1. let stat == fn that computes
+    """
+
+
     n_nodes = len(k_list)
     n_samples = k_list[0].shape[0]
 

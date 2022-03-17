@@ -4,7 +4,12 @@ from stats_tests import joint_independence_test
 import copy
 
 
-def dHSIC_links_MC_norm(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
+def extract(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
+    """
+    To do:
+    1. return (var1, var2), reject/accept, test_statistic, critical_value, normalised_weights
+    """
+
     K = len(iterable)  # number of total variables (17 goals, 76 targets)
     edges = {}  # initialize dictionary with edges according to dependencies found
     Adj2 = np.zeros((K, K))  # initialize KxK adjacency matrix for d=2

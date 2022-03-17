@@ -1,11 +1,11 @@
-# this is the file for making data object
-from dHSIC import compute_dHSIC
-import numpy as np
-from sklearn.metrics import pairwise_distances, pairwise_kernels
-import networkx as nx
-from tqdm import tqdm
-import os
+# this is the file for making data
 import warnings
+
+import numpy as np
+from sklearn.metrics import pairwise_kernels, pairwise_distances
+from tqdm import tqdm
+
+from dHSIC import compute_dHSIC
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=RuntimeWarning)
@@ -46,7 +46,7 @@ def iid_example(mode='multi-normal'):
     Returns kernels of iid data that has higher-order interactions (from Bjorn Bottcher's notes)
     """
     dHSIC_cor = []
-    for s in np.linspace(0, 1, 201):
+    for s in tqdm(np.linspace(0, 1, 201)):
         if mode == 'multi-normal':
             # Multivariate normal
             mean = [0, 0, 0]

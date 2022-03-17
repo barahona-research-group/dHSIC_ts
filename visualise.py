@@ -128,7 +128,9 @@ colors_SDG = {1:(229/255, 36/255, 59/255), 2:(221/255, 166/255, 58/255), 3:(76/2
               16: (0, 104/255, 157/255), 17:(25/255, 72/255, 106/255) }
 
 
-def plot_eig_centralities_reorg(G, n_labels, name, shortname, colors=colors_SDG):
+def plot_eig_centralities_reorg(G, n_labels, name, shortname, colors=None):
+    if colors is None:
+        colors = colors_SDG
     degree = nx.eigenvector_centrality(G, weight='weight')
 
     num = len(n_labels)

@@ -1,5 +1,6 @@
 from data import iid_example
 import matplotlib.pyplot as plt
+
 import numpy as np
 
 mn_dHcor = iid_example(mode='multi-normal')

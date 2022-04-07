@@ -1,6 +1,6 @@
 import numpy as np
 from util import combinations_tuple
-from stats_tests import joint_independence_test
+from tests import joint_independence_test
 import copy
 
 
@@ -8,6 +8,8 @@ def extract(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
     """
     To do:
     1. return (var1, var2), reject/accept, test_statistic, critical_value, normalised_weights
+    2. preprocess, combinations, load stats, load tests
+    3. return rejects, dhsics, critical values,
     """
 
     K = len(iterable)  # number of total variables (17 goals, 76 targets)
@@ -15,6 +17,7 @@ def extract(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
     Adj2 = np.zeros((K, K))  # initialize KxK adjacency matrix for d=2
     d = 2  # initial number of variables for dHSIC
     e = 0
+    # individual dHSICs for normalisation later
     HSICs_all = compute_all_HSIC(group_arr, len(iterable))
 
     indexes = np.arange(K)  # create vector corresponding to indexes of iterable

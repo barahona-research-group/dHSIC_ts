@@ -1,55 +1,14 @@
-# this is the file for making data
-import warnings
-
-import numpy as np
-from sklearn.metrics import pairwise_kernels, pairwise_distances
 from tqdm import tqdm
-
-from dHSIC import compute_dHSIC
-
-warnings.filterwarnings('ignore', category=DeprecationWarning)
-warnings.filterwarnings('ignore', category=RuntimeWarning)
+import numpy as np
+from sklearn.metrics import pairwise_kernels
+from HOI.statistics import compute_dHSIC_statistics
 
 
-def width(Z):
-    """
-    Computes the median heuristic for the kernel bandwidth
-    """
-    dist_mat = pairwise_distances(Z, metric='euclidean')
-    width_Z = np.median(dist_mat[dist_mat > 0])
-    return width_Z
-
-
-def compute_kernel(data, nodes):
-    # data preparation
-    """
-    To do:
-    1. input data type = pandas dataframe
-    """
-
-    num_nodes = nodes
-    prep_g = np.empty(num_nodes, dtype=object)
-    prep_g_K = np.empty(num_nodes, dtype=object)
-
-    for g in range(num_nodes):
-        g_list = []
-        for i in nodes:
-            g_list.append(np.asarray(data[i]))
-
-        g_array = np.asarray(g_list)
-        prep_g[g] = g_array
-
-        K_matrix = pairwise_kernels(g_array, metric='rbf', gamma=0.5 / (width(g_array) ** 2))
-        prep_g_K[g] = K_matrix
-
-    return prep_g, prep_g_K
-
-
-def iid_example(mode='multi-normal'):
+def make_iid_example(mode='multi-normal'):
     """
     Returns kernels of iid data that has higher-order interactions (from Bjorn Bottcher's notes)
     """
-    dHSIC_cor = []
+    # dHSIC_cor = []
     for s in tqdm(np.linspace(0, 1, 201)):
         if mode == 'multi-normal':
             # Multivariate normal
@@ -82,19 +41,19 @@ def iid_example(mode='multi-normal'):
         K2 = pairwise_kernels(d2.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d2.reshape(-1, 1)) ** 2))
         K3 = pairwise_kernels(d3.reshape(-1, 1), metric='rbf', gamma=0.5 / (width(d3.reshape(-1, 1)) ** 2))
 
-        K_list_all = [K1, K2, K3]
-        K_list_1 = [K1, K1, K1]
-        K_list_2 = [K2, K2, K2]
-        K_list_3 = [K3, K3, K3]
+        # K_list_all = [K1, K2, K3]
+        # K_list_1 = [K1, K1, K1]
+        # K_list_2 = [K2, K2, K2]
+        # K_list_3 = [K3, K3, K3]
+        #
+        # dHSIC_all = compute_dHSIC_statistics(K_list_all)
+        # dHSIC_1 = compute_dHSIC_statistics(K_list_1)
+        # dHSIC_2 = compute_dHSIC_statistics(K_list_2)
+        # dHSIC_3 = compute_dHSIC_statistics(K_list_3)
+        #
+        # dHSIC_cor.append(dHSIC_all / (dHSIC_1 * dHSIC_2 * dHSIC_3) ** (1 / 3))
 
-        dHSIC_all = compute_dHSIC(K_list_all)
-        dHSIC_1 = compute_dHSIC(K_list_1)
-        dHSIC_2 = compute_dHSIC(K_list_2)
-        dHSIC_3 = compute_dHSIC(K_list_3)
-
-        dHSIC_cor.append(dHSIC_all / (dHSIC_1 * dHSIC_2 * dHSIC_3) ** (1 / 3))
-
-    return dHSIC_cor
+    return K1, K2, K3
 
 
 def make_stat():

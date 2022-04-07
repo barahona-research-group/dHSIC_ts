@@ -1,7 +1,8 @@
 import numpy as np
+from HOI.statistics import compute_dHSIC_statistics
 
 
-def permutation_test(k_list, n_samples, n_nodes, stat_found, n_perms=5000, alpha=0.05):
+def permutation_test(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
     """
     Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
@@ -17,7 +18,7 @@ def permutation_test(k_list, n_samples, n_nodes, stat_found, n_perms=5000, alpha
         term2 = np.sum(k_list[0]) / (n_samples ** 2)
         term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples ** 2)
 
-        for j in range(1, n_nodes):
+        for j in range(1, n_variables):
             index_perm = np.random.permutation(k_list[j].shape[0])
             k_perm = k_list[j][index_perm, index_perm[:, None]]
 
@@ -56,14 +57,13 @@ def joint_independence_test(k_list, n_perms=5000, alpha=0.05):
     1. let stat == fn that computes
     """
 
-
-    n_nodes = len(k_list)
+    n_variables = len(k_list)
     n_samples = k_list[0].shape[0]
 
     # statistic and threshold
-    stat = compute_dHSIC_statistics(k_list)
-    critical_value = permutation_test(k_list, n_samples, n_nodes, stat, n_perms, alpha)
+    statistic = compute_dHSIC_statistics(k_list)
+    critical_value = permutation_test(k_list, n_samples, n_variables, statistic, n_perms, alpha)
 
-    reject = int(stat > critical_value)
+    reject = int(statistic > critical_value)
 
-    return stat, reject
+    return statistic, reject

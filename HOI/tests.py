@@ -39,7 +39,7 @@ def permutation_test(k_list, n_samples, n_variables, stat_found, n_perms=5000, a
     return critical_value
 
 
-def joint_independence_test(k_list, n_perms=5000, alpha=0.05):
+def test_independence(k_list, n_perms=5000, alpha=0.05):
     """
     Performs the independence test with HSIC and returns an accept or reject statement
 

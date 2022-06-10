@@ -4,7 +4,7 @@ from tests import joint_independence_test
 import copy
 
 
-def extract(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
+def reconstruct_HOI(group_arr, iterable, stop_after_2=False, n_perms=5000, alpha=0.05):
     """
     To do:
     1. return (var1, var2), reject/accept, test_statistic, critical_value, normalised_weights

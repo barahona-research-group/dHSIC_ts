@@ -1,4 +1,6 @@
 # here are some useful functions
+import numpy as np
+
 
 def combinations_tuple(iterable, r):
     """
@@ -21,3 +23,4 @@ def combinations_tuple(iterable, r):
         for j in range(i + 1, r):
             indices[j] = indices[j - 1] + 1
         yield tuple(pool[i] for i in indices)
+

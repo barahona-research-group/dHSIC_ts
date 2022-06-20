@@ -2,9 +2,8 @@ from tqdm import tqdm
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.arima_process import arma_generate_sample
-
-from numpy import append, array
-from numpy.random import normal
+from numpy import append, array, sign
+from numpy.random import normal, randn
 
 
 def make_iid_example(mode='multi-normal', s=0.99):
@@ -46,31 +45,28 @@ def make_iid_example(mode='multi-normal', s=0.99):
     return df
 
 
-def stationary_pb_example(n_sample, seed, d, mode):
+def stationary_pb_ts(n_sample, seed, d, mode, a=0.5):
     np.random.seed(seed)
+    x = np.zeros(n_sample)
+    y = np.zeros(n_sample)
+    z = np.zeros(n_sample)
 
-    x = ARIMA(phi=np.array([0.5]), theta=np.array([0]), n=n_sample)
-    y = ARIMA(phi=np.array([0.5]), theta=np.array([0]), n=n_sample)
-    z0 = ARIMA(phi=np.array([0.5]), theta=np.array([0]), n=n_sample)
-    theta = ARIMA(phi=np.array([0]), theta=np.array([0]), n=n_sample)  # pure noise
-
-    if mode == 'case1':
-        # Z is dependent on both X and Y separately, as well as on them both jointly (ie dependent on pX; Y q)
-        xy = x+y
-        z = z0 + d * xy
-    if mode == 'case2':
-        # Z is dependent on the process (X; Y) but is independent of X and Y when considered separately
-        z = z0 + d * abs(theta) * np.sign(x * y)
-    # else:
-    #     raise ValueError("Invalid example")
+    x[0] = randn()
+    y[0] = randn()
+    z[0] = randn()
+    for i in range(1, n_sample):
+        x[i] = a * x[i - 1] + randn()
+        y[i] = a * y[i - 1] + randn()
+        if mode == 'case1':
+            # pairwise independent but jointly dependent
+            z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
+        if mode == 'case2':
+            # pairwise dependent and jointly dependent
+            z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
+        if mode == 'case3':
+            # all independence
+            z[i] = a * z[i - 1] + randn()
     return x, y, z
-
-
-def make_stat():
-    """
-    Returns stationary time series data that has higher-order interactions
-    """
-    return
 
 
 def make_nonstat():

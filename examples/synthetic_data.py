@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-from statsmodels.tsa.arima_process import arma_generate_sample
+# from statsmodels.tsa.arima_process import arma_generate_sample
 from numpy import append, array, sign
 from numpy.random import normal, randn
 
@@ -66,7 +66,9 @@ def stationary_pb_ts(n_sample, seed, d, mode, a=0.5):
         if mode == 'case3':
             # all independence
             z[i] = a * z[i - 1] + randn()
-    return x, y, z
+            
+    df = pd.DataFrame(list(zip(x, y, z)), columns=['d1', 'd2', 'd3'])
+    return df
 
 
 def make_nonstat():

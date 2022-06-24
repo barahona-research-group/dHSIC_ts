@@ -41,6 +41,101 @@ def permutation_iid(k_list, n_samples, n_variables, stat_found, n_perms=5000, al
     return critical_value
 
 
+def estimate_tail_head(data_list):
+    m = len(data_list[0])
+    # sum up all variable vectors
+    acf = sm.tsa.acf(np.sum(data_list, axis=0), nlags=50)
+    smallestACF = np.where(acf < 0.2)  # returns indices
+    head = smallestACF[0][0]  # returns smallest index
+    if head > min(75, m):
+        raise ValueError('possibly long memory process, the output of test might be FALSE.')
+    head = min(head, 50)
+    tail = m
+    if (tail - head) < 100:
+        raise ValueError('using less than 100 points for a bootstrap approximation, stability of the test might be '
+                         'affected')
+    return head, tail
+
+
+def shifting_kernel(head, tail, k_list):
+    num_var = len(k_list)
+    shifted_kernel_lists = {}
+    for cut in range(head, tail):
+        ind = list(range(cut, tail)) + list(range(0, cut))
+        shifted_kernel_list = {}
+        for i in range(num_var):
+            shifted_kernel_list[str(i)] = k_list[i][:, ind]
+        shifted_kernel_lists[str(cut-head)] = shifted_kernel_list
+    return shifted_kernel_lists
+
+
+def rand_ind(num_cut, num_var):
+    perms = [np.array(range(num_cut))]
+    for i in range(num_var-1):
+        perm = np.random.permutation(num_cut)
+        perms.append(perm)
+    perms = np.transpose(perms)
+    return perms
+
+
+def permutation_stationary_ts(data_list, k_list, alpha):
+    num_var = len(k_list)
+    head, tail = estimate_tail_head(data_list)
+    shifted_kernel_lists = shifting_kernel(head, tail, k_list)
+    num_cut = len(shifted_kernel_lists)
+    perms = rand_ind(num_cut, num_var)
+    
+    shifted_dHSICs = []
+    for ind in perms:
+        shifted_k_lists = [shifted_kernel_lists[str(ind[i])][str(i)] for i in range(num_var)]
+        shifted_dHSIC = compute_dHSIC_statistics(shifted_k_lists)
+        shifted_dHSICs.append(shifted_dHSIC)
+
+    critical_value = np.quantile(shifted_dHSICs, 1 - alpha)
+    return critical_value
+
+
+def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
+    """
+    Performs the independence test with dHSIC and returns an accept or reject statement
+
+    Inputs:
+    k_list: list of Kernel matrices for each variable, each having dimensions (n_samples, n_samples)
+    mode: choose test type
+    n_perms: number of permutations performed when bootstrapping the null
+    alpha: rejection threshold of the test
+
+    Returns:
+    reject: 1 if null rejected, 0 if null not rejected
+    """
+
+    """
+    To do:
+    1. add if conditions to import the right stats/test
+    """
+
+    n_variables = len(k_list)
+    n_samples = k_list[0].shape[0]
+
+    # statistic and threshold
+    if mode == 'iid':
+        statistic = compute_dHSIC_statistics(k_list)
+        critical_value = permutation_iid(k_list, n_samples, n_variables, statistic, n_perms, alpha)
+        reject = int(statistic > critical_value)
+
+    if mode == 'stat_ts':
+        statistic = compute_dHSIC_statistics(k_list)
+        critical_value = permutation_stationary_ts(data_list, k_list, alpha=0.05)
+        reject = int(statistic > critical_value)
+
+    else:
+        raise ValueError("This is not implemented")
+
+    return statistic, critical_value, reject
+
+
+
+
 #
 # def bootstrap_series(length, n_bootstrap):
 #     # generates the wild bootstrap process
@@ -108,80 +203,3 @@ def permutation_iid(k_list, n_samples, n_variables, stat_found, n_perms=5000, al
 #     reject_YZ_X = int(resultsHSIC_YZ_X > critical_value_YZ_X)
 #
 #     return [reject_XY, reject_XZ, reject_YZ], [reject_XY_Z, reject_XZ_Y, reject_YZ_X]
-def estimate_tail_head(data_list):
-    m = len(data_list[0])
-    # sum up all variable vectors
-    acf = sm.tsa.acf(np.sum(data_list, axis=1), nlags=50)
-    smallestACF = np.where(acf < 0.2)  # returns indices
-    head = smallestACF[0][0]  # returns smallest index
-    if head > min(75, m):
-        raise ValueError('possibly long memory process, the output of test might be FALSE.')
-    head = min(head, 50)
-    tail = m
-    if (tail - head) < 100:
-        raise ValueError('using less than 100 points for a bootstrap approximation, stability of the test might be '
-                         'affected')
-    return tail, head
-
-
-def shift_kernel(head, tail, k_list):
-    m = len(k_list)
-    shifted_kernel_lists = []
-    for cut in range(head, tail):
-        ind = list(range(cut, m)) + list(range(0, cut))
-        shifted_kernel_list = []
-        for i in range(m):
-            shifted_kernel_list.append(kernel[:, ind])
-        shifted_kernel_lists.append(shifted_kernel_list)
-    return shifted_kernel_lists
-
-
-def permutation_stationary_ts(data_list, k_list, alpha):
-    num_var = len(k_list)
-    test_statistic = compute_dHSIC_statistics(k_list)
-    head, tail = estimate_tail_head(data_list)
-    shifted_kernel_lists = shift_kernel(head, tail, k_list)
-    shifted_dHSICs = []
-    for i in range(len(shifted_kernel_lists)):
-        shifted_dHSIC = compute_dHSIC_statistics(shifted_kernel_lists)
-        shifted_dHSICs.append(shifted_dHSIC)
-
-    critical_value = np.quantile(shifted_dHSICs, 1 - alpha)
-    return critical_value
-
-
-def test_independence(k_list, mode, n_perms=5000, alpha=0.05):
-    """
-    Performs the independence test with HSIC and returns an accept or reject statement
-
-    Inputs:
-    k_list: list of Kernel matrices for each variable, each having dimensions (n_samples, n_samples)
-    mode: choose test type
-    n_perms: number of permutations performed when bootstrapping the null
-    alpha: rejection threshold of the test
-
-    Returns:
-    reject: 1 if null rejected, 0 if null not rejected
-    """
-
-    """
-    To do:
-    1. add if conditions to import the right stats/test
-    """
-
-    n_variables = len(k_list)
-    n_samples = k_list[0].shape[0]
-
-    # statistic and threshold
-    if mode == 'iid':
-        statistic = compute_dHSIC_statistics(k_list)
-        critical_value = permutation_iid(k_list, n_samples, n_variables, statistic, n_perms, alpha)
-        reject = int(statistic > critical_value)
-    # if mode == 'time series':
-    #     statistic_xy = compute_HSIC_statistics(k_list)
-    #     critical_value = wildbootstrap_test(k_list, statistic, alpha=0.05, n_bootstrap=300, test_type=2)
-    #     reject = int(statistic > critical_value)
-    else:
-        raise ValueError("This is not implemented")
-
-    return statistic, critical_value, reject

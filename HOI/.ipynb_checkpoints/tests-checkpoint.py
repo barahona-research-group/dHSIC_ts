@@ -80,7 +80,7 @@ def rand_ind(num_cut, num_var):
 
 def permutation_stationary_ts(data_list, k_list, alpha):
     num_var = len(k_list)
-    tail, head = estimate_tail_head(data_list)
+    head, tail = estimate_tail_head(data_list)
     shifted_kernel_lists = shifting_kernel(head, tail, k_list)
     num_cut = len(shifted_kernel_lists)
     perms = rand_ind(num_cut, num_var)
@@ -125,11 +125,8 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
 
     if mode == 'stat_ts':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value = permutation_stationary_ts(k_list, data_list, alpha=0.05)
+        critical_value = permutation_stationary_ts(data_list, k_list, alpha=0.05)
         reject = int(statistic > critical_value)
-
-    else:
-        raise ValueError("This is not implemented")
 
     return statistic, critical_value, reject
 

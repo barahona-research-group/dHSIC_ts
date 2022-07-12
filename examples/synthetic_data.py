@@ -6,23 +6,22 @@ from numpy import append, array, sign
 from numpy.random import normal, randn
 
 
-def make_iid_example(mode='multi-normal', s=0.99):
+def make_iid_example(mode, s=0.99, n_sample=100):
     """
     Returns kernels of iid data that has higher-order interactions (from Bjorn Bottcher's notes: add details)
     """
-    # dHSIC_cor = []
     if mode == 'multi-normal':
         # Multivariate normal
         mean = [0, 0, 0]
         cov = [[1, s, s], [s, 1, s], [s, s, 1]]
-        d1, d2, d3 = np.random.multivariate_normal(mean, cov, 100).T
+        d1, d2, d3 = np.random.multivariate_normal(mean, cov, n_sample).T
 
     if mode == 'interpolated':
         # Interpolated complete dependence
         mean = [0, 0, 0, 0]
         cov = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
 
-        x, x1, x2, x3 = np.random.multivariate_normal(mean, cov, 100).T
+        x, x1, x2, x3 = np.random.multivariate_normal(mean, cov, n_sample).T
         d1, d2, d3 = s * x + (1 - s) * x1, s * x + (1 - s) * x2, s * x + (1 - s) * x3
 
     if mode == 'higher-order':
@@ -30,38 +29,37 @@ def make_iid_example(mode='multi-normal', s=0.99):
         mean = [0, 0, 0]
         cov = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
-        x1, x2, x3 = np.random.multivariate_normal(mean, cov, 100).T
+        x1, x2, x3 = np.random.multivariate_normal(mean, cov, n_sample).T
 
-        y1 = np.random.binomial(n=1, p=0.5, size=100)
-        y2 = np.random.binomial(n=1, p=0.5, size=100)
+        y1 = np.random.binomial(n=1, p=0.5, size=n_sample)
+        y2 = np.random.binomial(n=1, p=0.5, size=n_sample)
         y3 = np.asarray([int(y1[i] == y2[i]) for i in range(len(y1))])
 
         d1, d2, d3 = y1 + (1 - s) * x1, y2 + (1 - s) * x2, y3 + (1 - s) * x3
 
-    else:
-        raise ValueError("Invalid example")
     df = pd.DataFrame(list(zip(d1, d2, d3)), columns=['d1', 'd2', 'd3'])
 
     return df
 
 
-def stationary_pb_ts(n_sample, seed, d, mode, a=0.5):
+def stationary_pb_ts(t_time, seed, d, mode, a=0.5):
+    # variables * time * 1
     np.random.seed(seed)
-    x = np.zeros(n_sample)
-    y = np.zeros(n_sample)
-    z = np.zeros(n_sample)
+    x = np.zeros(t_time)
+    y = np.zeros(t_time)
+    z = np.zeros(t_time)
 
     x[0] = randn()
     y[0] = randn()
     z[0] = randn()
-    for i in range(1, n_sample):
+    for i in range(1, t_time):
         x[i] = a * x[i - 1] + randn()
         y[i] = a * y[i - 1] + randn()
         if mode == 'case1':
             # pairwise independent but jointly dependent
             z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
         if mode == 'case2':
-            # pairwise dependent and jointly dependent
+            # 2 pairwise dependent and jointly dependent
             z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
         if mode == 'case3':
             # all independence
@@ -69,6 +67,40 @@ def stationary_pb_ts(n_sample, seed, d, mode, a=0.5):
             
     df = pd.DataFrame(list(zip(x, y, z)), columns=['d1', 'd2', 'd3'])
     return df
+
+
+def stationary_pb_ts_n(n_sample, t_time, seed, d, mode, a=0.5):
+    # variables * time * n_sample
+    x_mat = []
+    y_mat = []
+    z_mat = []
+    for j in range(n_sample):
+        np.random.seed(seed)
+        x = np.zeros(t_time)
+        y = np.zeros(t_time)
+        z = np.zeros(t_time)
+
+        x[0] = randn()
+        y[0] = randn()
+        z[0] = randn()
+        for i in range(1, t_time):
+            x[i] = a * x[i - 1] + randn()
+            y[i] = a * y[i - 1] + randn()
+            if mode == 'case1':
+                # pairwise independent but jointly dependent
+                z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
+            if mode == 'case2':
+                # 2 pairwise dependent and jointly dependent
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
+            if mode == 'case3':
+                # all independence
+                z[i] = a * z[i - 1] + randn()
+
+        x_mat.append(x)
+        y_mat.append(y)
+        z_mat.append(z)
+
+    return np.array(x), np.array(y), np.array(z)
 
 
 def make_nonstat():

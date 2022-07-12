@@ -22,7 +22,6 @@ def compute_kernel(df):
     # data preparation
     """
     To do:
-    1. input data type = pandas dataframe
     """
 
     data_dict = df.to_dict('list')
@@ -34,6 +33,16 @@ def compute_kernel(df):
         kernel_dict[i] = kernel_matrix
 
     return data_dict, kernel_dict
+
+
+def compute_kernel_n(data_mat):
+    # data preparation for individual variable matrices
+    """
+    To do:
+    """
+    kernel_matrix = pairwise_kernels(data, metric='rbf', gamma=0.5 / (width(data_mat) ** 2))
+
+    return kernel_matrix
 
 
 def unpack_dict_info(kernel_dict):

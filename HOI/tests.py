@@ -122,16 +122,12 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
         statistic = compute_dHSIC_statistics(k_list)
         critical_value = permutation_iid(k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
-
+        return statistic, critical_value, reject
     if mode == 'stat_ts':
         statistic = compute_dHSIC_statistics(k_list)
         critical_value = permutation_stationary_ts(data_list, k_list, alpha=0.05)
         reject = int(statistic > critical_value)
-
-    else:
-        raise ValueError("This is not implemented")
-
-    return statistic, critical_value, reject
+        return statistic, critical_value, reject
 
 
 

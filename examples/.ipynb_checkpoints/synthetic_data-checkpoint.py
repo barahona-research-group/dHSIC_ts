@@ -42,16 +42,17 @@ def make_iid_example(mode, s=0.99, n_sample=100):
     return df
 
 
-def stationary_pb_ts(n_sample, seed, d, mode, a=0.5):
-    np.random.seed(seed)
-    x = np.zeros(n_sample)
-    y = np.zeros(n_sample)
-    z = np.zeros(n_sample)
+def stationary_pb_ts(t_time, d, mode, a=0.5):
+    # variables * time * 1
+    # np.random.seed(seed)
+    x = np.zeros(t_time)
+    y = np.zeros(t_time)
+    z = np.zeros(t_time)
 
     x[0] = randn()
     y[0] = randn()
     z[0] = randn()
-    for i in range(1, n_sample):
+    for i in range(1, t_time):
         x[i] = a * x[i - 1] + randn()
         y[i] = a * y[i - 1] + randn()
         if mode == 'case1':
@@ -66,6 +67,40 @@ def stationary_pb_ts(n_sample, seed, d, mode, a=0.5):
             
     df = pd.DataFrame(list(zip(x, y, z)), columns=['d1', 'd2', 'd3'])
     return df
+
+
+def stationary_pb_ts_n(n_sample, t_time, seed, d, mode, a=0.5):
+    # variables * time * n_sample
+    x_mat = []
+    y_mat = []
+    z_mat = []
+    for j in range(n_sample):
+        np.random.seed(seed)
+        x = np.zeros(t_time)
+        y = np.zeros(t_time)
+        z = np.zeros(t_time)
+
+        x[0] = randn()
+        y[0] = randn()
+        z[0] = randn()
+        for i in range(1, t_time):
+            x[i] = a * x[i - 1] + randn()
+            y[i] = a * y[i - 1] + randn()
+            if mode == 'case1':
+                # pairwise independent but jointly dependent
+                z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
+            if mode == 'case2':
+                # 2 pairwise dependent and jointly dependent
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
+            if mode == 'case3':
+                # all independence
+                z[i] = a * z[i - 1] + randn()
+
+        x_mat.append(x)
+        y_mat.append(y)
+        z_mat.append(z)
+
+    return np.array(x), np.array(y), np.array(z)
 
 
 def make_nonstat():

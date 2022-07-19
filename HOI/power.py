@@ -1,7 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-
+from ipywidgets import IntProgress
 from HOI.preprocessings import compute_kernel
 from HOI.tests import test_independence
 from examples.synthetic_data import make_iid_example

@@ -42,9 +42,9 @@ def make_iid_example(mode, s=0.99, n_sample=100):
     return df
 
 
-def stationary_pb_ts(t_time, seed, d, mode, a=0.5):
+def stationary_pb_ts(t_time, d, mode, a=0.5):
     # variables * time * 1
-    np.random.seed(seed)
+    # np.random.seed(seed)
     x = np.zeros(t_time)
     y = np.zeros(t_time)
     z = np.zeros(t_time)

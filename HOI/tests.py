@@ -128,7 +128,11 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
         critical_value = permutation_stationary_ts(data_list, k_list, alpha=0.05)
         reject = int(statistic > critical_value)
         return statistic, critical_value, reject
-
+    # if mode == 'stat_ts_n':
+    #     statistic = compute_dHSIC_statistics(k_list)
+    #     critical_value = permutation_stationary_ts(np.sum(data_list, axis=0), k_list, alpha=0.05)
+    #     reject = int(statistic > critical_value)
+    #     return statistic, critical_value, reject
 
 
 

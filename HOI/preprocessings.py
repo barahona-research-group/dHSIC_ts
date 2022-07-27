@@ -40,7 +40,7 @@ def compute_kernel_n(data_mat):
     """
     To do:
     """
-    kernel_matrix = pairwise_kernels(data, metric='rbf', gamma=0.5 / (width(data_mat) ** 2))
+    kernel_matrix = pairwise_kernels(data_mat, metric='rbf', gamma=0.5 / (width(data_mat) ** 2))
 
     return kernel_matrix
 

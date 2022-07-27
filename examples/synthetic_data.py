@@ -2,7 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import pandas as pd
 # from statsmodels.tsa.arima_process import arma_generate_sample
-from numpy import append, array, sign
+from numpy import sign, sin, cos, pi
 from numpy.random import normal, randn
 
 
@@ -42,40 +42,60 @@ def make_iid_example(mode, s=0.99, n_sample=100):
     return df
 
 
-def stationary_pb_ts(t_time, d, mode, a=0.5):
+def stationary_pb_ts(t_time, d, mode, a=0.5, order=3):
     # variables * time * 1
     # np.random.seed(seed)
     x = np.zeros(t_time)
     y = np.zeros(t_time)
+    w = np.zeros(t_time)
     z = np.zeros(t_time)
 
     x[0] = randn()
     y[0] = randn()
+    w[0] = randn()
     z[0] = randn()
-    for i in range(1, t_time):
-        x[i] = a * x[i - 1] + randn()
-        y[i] = a * y[i - 1] + randn()
-        if mode == 'case1':
-            # pairwise independent but jointly dependent
-            z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
-        if mode == 'case2':
-            # 2 pairwise dependent and jointly dependent
-            z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
-        if mode == 'case3':
-            # all independence
-            z[i] = a * z[i - 1] + randn()
-            
-    df = pd.DataFrame(list(zip(x, y, z)), columns=['d1', 'd2', 'd3'])
+
+    if order == 3:
+        for i in range(1, t_time):
+            x[i] = a * x[i - 1] + randn()
+            y[i] = a * y[i - 1] + randn()
+            if mode == 'case1':
+                # pairwise independent but jointly dependent
+                z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
+            if mode == 'case2':
+                # 2 pairwise dependent and 3-way jointly dependent
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
+            if mode == 'case3':
+                # all independence
+                z[i] = a * z[i - 1] + randn()
+        df = pd.DataFrame(list(zip(x, y, z)), columns=['d1', 'd2', 'd3'])
+
+    if order == 4:
+        for i in range(1, t_time):
+            x[i] = a * x[i - 1] + randn()
+            y[i] = a * y[i - 1] + randn()
+            w[i] = a * w[i - 1] + randn()
+
+            if mode == 'case1':
+                # pairwise independent but 4-way jointly dependent
+                z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i] * w[i]) + randn()
+            if mode == 'case2':
+                # 3 pairwise dependent and 4-way jointly dependent
+                z[i] = a * z[i - 1] + d * (x[i] + y[i] + w[i]) + randn()
+            if mode == 'case3':
+                # all independence
+                z[i] = a * z[i - 1] + randn()
+        df = pd.DataFrame(list(zip(x, y, w, z)), columns=['d1', 'd2', 'd3', 'd4'])
     return df
 
 
-def stationary_pb_ts_n(n_sample, t_time, seed, d, mode, a=0.5):
+def stationary_pb_ts_n(n_sample, t_time, d, mode, a=0.5):
     # variables * time * n_sample
     x_mat = []
     y_mat = []
     z_mat = []
     for j in range(n_sample):
-        np.random.seed(seed)
+        # np.random.seed(seed)
         x = np.zeros(t_time)
         y = np.zeros(t_time)
         z = np.zeros(t_time)
@@ -100,14 +120,58 @@ def stationary_pb_ts_n(n_sample, t_time, seed, d, mode, a=0.5):
         y_mat.append(y)
         z_mat.append(z)
 
-    return np.array(x), np.array(y), np.array(z)
+    return np.swapaxes(x_mat, 0, 1), np.swapaxes(y_mat, 0, 1), np.swapaxes(z_mat, 0, 1)
 
 
-def make_nonstat():
+def nonstationary_ts_n(n_sample, t_time, d, mode, a=0.5, order=3):
     """
     Returns nonstationary time series data that has higher-order interactions
     """
-    return
+    # variables * time * n_sample
+    x_mat = []
+    y_mat = []
+    w_mat = []
+    z_mat = []
+    for j in range(n_sample):
+        # np.random.seed(seed)
+        x = np.zeros(t_time)
+        y = np.zeros(t_time)
+        w = np.zeros(t_time)
+        z = np.zeros(t_time)
+
+        x[0] = randn()
+        y[0] = randn()
+        w[0] = randn()
+        z[0] = randn()
+        for i in range(1, t_time):
+            x[i] = a * x[i - 1] + i * randn()
+            y[i] = a * y[i - 1] + i * randn()
+            w[i] = a * w[i - 1] + i * randn()
+            if order == 3:
+                if mode == 'case1':
+                    # pairwise independent but jointly dependent
+                    z[i] = a * z[i - 1] + d * i * sign(x[i] * y[i]) + normal(0, 0.25)
+                if mode == 'case2':
+                    # 2 pairwise dependent and jointly dependent
+                    z[i] = a * z[i - 1] + d * (x[i] + y[i]) + i * randn()
+                if mode == 'case3':
+                    # all independence
+                    z[i] = a * z[i - 1] + i * randn()
+            if order == 4:
+                if mode == 'case1':
+                    # pairwise independent but jointly dependent
+                    z[i] = a * z[i - 1] + d * i * sign(x[i] * y[i] * w[i]) + normal(0, 0.125)
+                if mode == 'case2':
+                    # 2 pairwise dependent and jointly dependent
+                    z[i] = a * z[i - 1] + d * (x[i] + y[i] + w[i]) + i * randn()
+                if mode == 'case3':
+                    # all independence
+                    z[i] = a * z[i - 1] + i * randn()
+        x_mat.append(x)
+        y_mat.append(y)
+        w_mat.append(w)
+        z_mat.append(z)
+    return np.array(x_mat), np.array(y_mat), np.array(w_mat), np.array(z_mat)
 
 
 def ARIMA(phi=np.array([0]), theta=np.array([0]), d=0, t=0, mu=0, sigma=1, n=20, burn=100):

@@ -96,3 +96,32 @@ def compute_HSIC_statistics(K, L):
     Lc = H @ L @ H
     statMatrix = np.dot(Kc * Lc)
     return statMatrix
+
+
+def compute_lancaster_statistics(K, L, M):
+    m = np.shape(K)[0]
+    H = np.eye(m) - 1 / m * np.ones(m, m)
+    Kc = H @ K @ H
+    Lc = H @ L @ H
+    Mc = H @ M @ H
+    statMatrix = Kc * Lc * Mc
+    return statMatrix
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

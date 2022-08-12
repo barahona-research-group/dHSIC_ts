@@ -42,6 +42,43 @@ def make_iid_example(mode, s=0.99, n_sample=100):
     return df
 
 
+def make_iid_example_4way(mode, s=0.99, n_sample=100):
+    """
+    Returns kernels of iid data that has higher-order interactions (from Bjorn Bottcher's notes: add details)
+    """
+    if mode == 'multi-normal':
+        # Multivariate normal
+        mean = [0, 0, 0, 0]
+        cov = [[1, s, s, s], [s, 1, s, s], [s, s, 1, s], [s, s, s, 1]]
+        d1, d2, d3, d4 = np.random.multivariate_normal(mean, cov, n_sample).T
+
+    if mode == 'interpolated':
+        # Interpolated complete dependence
+        mean = [0, 0, 0, 0, 0]
+        cov = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
+
+        x, x1, x2, x3, x4 = np.random.multivariate_normal(mean, cov, n_sample).T
+        d1, d2, d3, d4 = s * x + (1 - s) * x1, s * x + (1 - s) * x2, s * x + (1 - s) * x3, s * x + (1 - s) * x4
+
+    if mode == 'higher-order':
+        # perturbed higher-order dependence
+        mean = [0, 0, 0, 0]
+        cov = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+
+        x1, x2, x3, x4 = np.random.multivariate_normal(mean, cov, n_sample).T
+
+        y1 = np.random.binomial(n=1, p=0.5, size=n_sample)
+        y2 = np.random.binomial(n=1, p=0.5, size=n_sample)
+        y3 = np.random.binomial(n=1, p=0.5, size=n_sample)
+        y4 = np.asarray([int(y1[i] == y2[i] == y3[i]) for i in range(len(y1))])
+
+        d1, d2, d3, d4 = y1 + (1 - s) * x1, y2 + (1 - s) * x2, y3 + (1 - s) * x3, y4 + (1 - s) * x4
+
+    df = pd.DataFrame(list(zip(d1, d2, d3)), columns=['d1', 'd2', 'd3'])
+
+    return df
+
+
 def stationary_pb_ts(t_time, d, mode, a=0.5, order=3):
     # variables * time * 1
     # np.random.seed(seed)

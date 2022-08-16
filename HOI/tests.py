@@ -4,7 +4,7 @@ from scipy.signal import lfilter
 import statsmodels.api as sm
 
 
-def permutation_iid(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
+def permutation(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
     """
     Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
@@ -35,10 +35,50 @@ def permutation_iid(k_list, n_samples, n_variables, stat_found, n_perms=5000, al
 
     statistics_sort = np.sort(statistics)
     # computing 1-alpha critical value
-    Bind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
-    critical_value = statistics_sort[Bind]
+    ind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
+    critical_value = statistics_sort[ind]
+    pval = (np.sum(stat_found <= statistics_sort) + 1)/(n_perms + 1)
+    return critical_value, pval
 
-    return critical_value
+
+def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_shift=5000, alpha=0.05):
+    """
+    Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
+    """
+
+    "to do:"
+
+    head, tail = estimate_tail_head(data_list)
+    statistics = np.zeros(tail - head)
+    index = range(0, 10, n_samples)
+    for i in range(n_shift):
+        term1 = k_list[0]
+        term2 = np.sum(k_list[0]) / (n_samples ** 2)
+        term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples ** 2)
+
+        for j in range(1, n_variables):
+            # choose a random number between head and tail
+            cut = np.random.randint(low=head, high=tail)
+            # get permutations after shift
+            index_perm = np.roll(index, cut)
+            # shift the matrix corresponds to that of the time series
+            k_perm = k_list[j][index_perm, index_perm[:, None]]
+
+            term1 = term1 * k_perm
+            term2 = term2 * np.sum(k_perm) / (n_samples ** 2)
+            term3 = term3 * np.sum(k_perm, axis=0) / n_samples
+
+        term1_sum = np.sum(term1)
+        term3_sum = np.sum(term3)
+
+        statistics[i] = term1_sum / (n_samples ** 2) + term2 - term3_sum
+
+    statistics_sort = np.sort(statistics)
+    # computing 1-alpha critical value
+    ind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
+    critical_value = statistics_sort[ind]
+    pval = (np.sum(stat_found <= statistics_sort) + 1)/(n_perms + 1)
+    return critical_value, pval
 
 
 def estimate_tail_head(data_list):
@@ -56,43 +96,43 @@ def estimate_tail_head(data_list):
                          'affected')
     return head, tail
 
-
-def shifting_kernel(head, tail, k_list):
-    num_var = len(k_list)
-    shifted_kernel_lists = {}
-    for cut in range(head, tail):
-        ind = list(range(cut, tail)) + list(range(0, cut))
-        shifted_kernel_list = {}
-        for i in range(num_var):
-            shifted_kernel_list[str(i)] = k_list[i][:, ind]
-        shifted_kernel_lists[str(cut-head)] = shifted_kernel_list
-    return shifted_kernel_lists
-
-
-def rand_ind(num_cut, num_var):
-    perms = [np.array(range(num_cut))]
-    for i in range(num_var-1):
-        perm = np.random.permutation(num_cut)
-        perms.append(perm)
-    perms = np.transpose(perms)
-    return perms
-
-
-def permutation_stationary_ts(data_list, k_list, alpha):
-    num_var = len(k_list)
-    head, tail = estimate_tail_head(data_list)
-    shifted_kernel_lists = shifting_kernel(head, tail, k_list)
-    num_cut = len(shifted_kernel_lists)
-    perms = rand_ind(num_cut, num_var)
-    
-    shifted_dHSICs = []
-    for ind in perms:
-        shifted_k_lists = [shifted_kernel_lists[str(ind[i])][str(i)] for i in range(num_var)]
-        shifted_dHSIC = compute_dHSIC_statistics(shifted_k_lists)
-        shifted_dHSICs.append(shifted_dHSIC)
-
-    critical_value = np.quantile(shifted_dHSICs, 1 - alpha)
-    return critical_value
+#
+# def shifting_kernel(head, tail, k_list):
+#     num_var = len(k_list)
+#     shifted_kernel_lists = {}
+#     for cut in range(head, tail):
+#         ind = list(range(cut, tail)) + list(range(0, cut))
+#         shifted_kernel_list = {}
+#         for i in range(num_var):
+#             shifted_kernel_list[str(i)] = k_list[i][:, ind]
+#         shifted_kernel_lists[str(cut-head)] = shifted_kernel_list
+#     return shifted_kernel_lists
+#
+#
+# def rand_ind(num_cut, num_var):
+#     perms = [np.array(range(num_cut))]
+#     for i in range(num_var-1):
+#         perm = np.random.permutation(num_cut)
+#         perms.append(perm)
+#     perms = np.transpose(perms)
+#     return perms
+#
+#
+# def permutation_stationary_ts(data_list, k_list, alpha):
+#     num_var = len(k_list)
+#     head, tail = estimate_tail_head(data_list)
+#     shifted_kernel_lists = shifting_kernel(head, tail, k_list)
+#     num_cut = len(shifted_kernel_lists)
+#     perms = rand_ind(num_cut, num_var)
+#
+#     shifted_dHSICs = []
+#     for ind in perms:
+#         shifted_k_lists = [shifted_kernel_lists[str(ind[i])][str(i)] for i in range(num_var)]
+#         shifted_dHSIC = compute_dHSIC_statistics(shifted_k_lists)
+#         shifted_dHSICs.append(shifted_dHSIC)
+#
+#     critical_value = np.quantile(shifted_dHSICs, 1 - alpha)
+#     return critical_value
 
 
 def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
@@ -120,12 +160,12 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
     # statistic and threshold
     if mode == 'iid':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value = permutation_iid(k_list, n_samples, n_variables, statistic, n_perms, alpha)
+        critical_value = permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, reject
     if mode == 'stat_ts':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value = permutation_stationary_ts(data_list, k_list, alpha=0.05)
+        critical_value = shifting(data_list, k_list, alpha=0.05)
         reject = int(statistic > critical_value)
         return statistic, critical_value, reject
     # if mode == 'stat_ts_n':

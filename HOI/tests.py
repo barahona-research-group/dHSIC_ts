@@ -1,5 +1,5 @@
 import numpy as np
-from HOI.statistics import compute_dHSIC_statistics, compute_HSIC_statistics, empirically_centre, Gauss_kernel
+from HOI.statistics import compute_dHSIC_statistics, compute_lancaster_statistics
 from scipy.signal import lfilter
 import statsmodels.api as sm
 
@@ -37,11 +37,11 @@ def permutation(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=
     # computing 1-alpha critical value
     ind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
     critical_value = statistics_sort[ind]
-    pval = (np.sum(stat_found <= statistics_sort) + 1)/(n_perms + 1)
+    pval = (np.sum(stat_found <= statistics_sort) + 1) / (n_perms + 1)
     return critical_value, pval
 
 
-def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_shift=5000, alpha=0.05):
+def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
     """
     Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
@@ -49,9 +49,9 @@ def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_shift=5000
     "to do:"
 
     head, tail = estimate_tail_head(data_list)
-    statistics = np.zeros(tail - head)
-    index = range(0, 10, n_samples)
-    for i in range(n_shift):
+    statistics = np.zeros(n_perms)
+    index = range(0, n_samples)
+    for i in range(n_perms):
         term1 = k_list[0]
         term2 = np.sum(k_list[0]) / (n_samples ** 2)
         term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples ** 2)
@@ -60,6 +60,7 @@ def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_shift=5000
             # choose a random number between head and tail
             cut = np.random.randint(low=head, high=tail)
             # get permutations after shift
+            # index_perm = np.array([cut:tail, 1:cut-1])
             index_perm = np.roll(index, cut)
             # shift the matrix corresponds to that of the time series
             k_perm = k_list[j][index_perm, index_perm[:, None]]
@@ -77,7 +78,7 @@ def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_shift=5000
     # computing 1-alpha critical value
     ind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
     critical_value = statistics_sort[ind]
-    pval = (np.sum(stat_found <= statistics_sort) + 1)/(n_perms + 1)
+    pval = (np.sum(stat_found <= statistics_sort) + 1) / (n_perms + 1)
     return critical_value, pval
 
 
@@ -95,6 +96,7 @@ def estimate_tail_head(data_list):
         raise ValueError('using less than 100 points for a bootstrap approximation, stability of the test might be '
                          'affected')
     return head, tail
+
 
 #
 # def shifting_kernel(head, tail, k_list):
@@ -156,25 +158,22 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
 
     n_variables = len(k_list)
     n_samples = k_list[0].shape[0]
-
     # statistic and threshold
     if mode == 'iid':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value = permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
+        critical_value, pval = permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
-        return statistic, critical_value, reject
+        return statistic, critical_value, pval, reject
     if mode == 'stat_ts':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value = shifting(data_list, k_list, alpha=0.05)
+        critical_value, pval = shifting(data_list, k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
-        return statistic, critical_value, reject
+        return statistic, critical_value, pval, reject
     # if mode == 'stat_ts_n':
     #     statistic = compute_dHSIC_statistics(k_list)
     #     critical_value = permutation_stationary_ts(np.sum(data_list, axis=0), k_list, alpha=0.05)
     #     reject = int(statistic > critical_value)
     #     return statistic, critical_value, reject
-
-
 
 #
 # def bootstrap_series(length, n_bootstrap):

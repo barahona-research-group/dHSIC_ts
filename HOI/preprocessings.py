@@ -1,8 +1,6 @@
 # this is the file for making data
 import warnings
-
 import numpy as np
-import pandas as pd
 from sklearn.metrics import pairwise_kernels, pairwise_distances
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)

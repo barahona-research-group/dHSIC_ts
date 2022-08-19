@@ -145,7 +145,7 @@ def stationary_pb_ts_n(n_sample, t_time, d, mode, a=0.5):
             y[i] = a * y[i - 1] + randn()
             if mode == 'case1':
                 # pairwise independent but jointly dependent
-                z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i]) + randn()
+                z[i] = a * z[i - 1] + d * max(x[i], y[i]) + randn()
             if mode == 'case2':
                 # 2 pairwise dependent and jointly dependent
                 z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()

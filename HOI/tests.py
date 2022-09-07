@@ -4,7 +4,10 @@ from HOI.preprocessings import compute_kernel
 from HOI.statistics import compute_dHSIC_statistics, compute_lancaster_statistics
 from scipy.signal import lfilter
 import statsmodels.api as sm
-import numba
+# import numba
+import cProfile
+
+from examples.synthetic_data import make_iid_example
 
 
 def permutation(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
@@ -101,6 +104,36 @@ def estimate_tail_head(data_list):
     return head, tail
 
 
+def lancaster_permutation(k_list, stat_found, n_perms=5000, alpha=0.05):
+    K = k_list[0]
+    L = k_list[1]
+    M = k_list[2]
+    m = np.shape(K)[0]
+    H = np.eye(m) - 1 / m * np.ones(m)
+    Kc = H @ K @ H
+    Lc = H @ L @ H
+    Mc = H @ M @ H
+
+    statistics = np.zeros(n_perms)
+    for i in range(n_perms):
+        y_perm = np.random.permutation(Kc.shape[0])
+        z_perm = np.random.permutation(Kc.shape[0])
+        Lc_perm = Lc[y_perm, y_perm[:, None]]
+        Mc_perm = Mc[z_perm, z_perm[:, None]]
+        statistics[i] = 1 / (m ** 2) * np.sum(Kc * Lc_perm * Mc_perm)
+
+    statistics_sort = np.sort(statistics)
+    critical_value = np.quantile(statistics_sort, 1 - alpha)
+    pval = (np.sum(stat_found <= statistics_sort) + 1) / (n_perms + 1)
+    return critical_value, pval
+
+
+def test_lancaster(k_list, n_perms=5000, alpha=0.05):
+    statistic = compute_lancaster_statistics(k_list)
+    critical_value, pval = lancaster_permutation(k_list, statistic, n_perms, alpha)
+    reject = int(statistic > critical_value)
+    return statistic, critical_value, pval, reject
+
 #
 # def shifting_kernel(head, tail, k_list):
 #     num_var = len(k_list)
@@ -178,7 +211,6 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
     #     reject = int(statistic > critical_value)
     #     return statistic, critical_value, reject
 
-
 #
 # def bootstrap_series(length, n_bootstrap):
 #     # generates the wild bootstrap process
@@ -246,18 +278,3 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
 #     reject_YZ_X = int(resultsHSIC_YZ_X > critical_value_YZ_X)
 #
 #     return [reject_XY, reject_XZ, reject_YZ], [reject_XY_Z, reject_XZ_Y, reject_YZ_X]
-# def main():
-#     rejects = 0
-#     for i in np.arange(100):
-#         df = make_iid_example(mode='multi-normal', s=0.5, n_sample=300)
-#         data_dict, kernel_dict = compute_kernel(df)
-#         k1 = kernel_dict['d1']
-#         k2 = kernel_dict['d2']
-#         k3 = kernel_dict['d3']
-#         _, _, _, reject1 = test_independence([k1, k2, k3], None, mode='iid', n_perms=2000, alpha=0.05)
-#         rejects = rejects + reject1
-#     return rejects/100
-#
-#
-# if __name__ == '__main__':
-#     main()

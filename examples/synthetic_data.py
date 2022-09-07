@@ -37,6 +37,12 @@ def make_iid_example(mode, s=0.99, n_sample=100):
 
         d1, d2, d3 = y1 + (1 - s) * x1, y2 + (1 - s) * x2, y3 + (1 - s) * x3
 
+    if mode == 'factorisation':
+        # P(XYZ) = P(X)P(Y,Z)
+        mean = [0, 0, 0]
+        cov = [[1, 0, 0], [0, 1, s], [0, s, 1]]
+        d1, d2, d3 = np.random.multivariate_normal(mean, cov, n_sample).T
+
     df = pd.DataFrame(list(zip(d1, d2, d3)), columns=['d1', 'd2', 'd3'])
 
     return df
@@ -273,10 +279,10 @@ def nonstationary_ts_n(n_sample, t_time, d, mode, a=0.5, order=3):
 #     return x[-n:]
 
 
-def main():
-    x, y, z = stationary_pb_ts_n(100, 10, 0.5, 'case1')
-    print(x.shape)
-
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     x, y, z = stationary_pb_ts_n(100, 10, 0.5, 'case1')
+#     print(x.shape)
+#
+#
+# if __name__ == "__main__":
+#     main()

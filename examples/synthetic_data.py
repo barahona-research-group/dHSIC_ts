@@ -43,6 +43,12 @@ def make_iid_example(mode, s=0.99, n_sample=100):
         cov = [[1, 0, 0], [0, 1, s], [0, s, 1]]
         d1, d2, d3 = np.random.multivariate_normal(mean, cov, n_sample).T
 
+    if mode == 'check_factorisation':
+        # P(XYZ) = P(X)P(Y,Z)
+        mean = [0, 0, 0]
+        cov = [[1, 0, s], [0, 1, s], [s, s, 1]]
+        d1, d2, d3 = np.random.multivariate_normal(mean, cov, n_sample).T
+
     df = pd.DataFrame(list(zip(d1, d2, d3)), columns=['d1', 'd2', 'd3'])
 
     return df

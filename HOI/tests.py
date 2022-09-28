@@ -10,7 +10,7 @@ import cProfile
 from examples.synthetic_data import make_iid_example
 
 
-def permutation(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
+def dhsic_permutation(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
     """
     Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
@@ -128,11 +128,48 @@ def lancaster_permutation(k_list, stat_found, n_perms=5000, alpha=0.05):
     return critical_value, pval
 
 
-def test_lancaster(k_list, n_perms=5000, alpha=0.05):
-    statistic = compute_lancaster_statistics(k_list)
-    critical_value, pval = lancaster_permutation(k_list, statistic, n_perms, alpha)
-    reject = int(statistic > critical_value)
-    return statistic, critical_value, pval, reject
+def lancaster_shifting(data_list, k_list, stat_found, n_samples, n_perms=5000, alpha=0.05):
+    head, tail = estimate_tail_head(data_list)
+    index = range(0, n_samples)
+
+    K = k_list[0]
+    L = k_list[1]
+    M = k_list[2]
+    m = np.shape(K)[0]
+    H = np.eye(m) - 1 / m * np.ones(m)
+    Kc = H @ K @ H
+    Lc = H @ L @ H
+    Mc = H @ M @ H
+
+    statistics = np.zeros(n_perms)
+    for i in range(n_perms):
+        cut_y = np.random.randint(low=head, high=tail)
+        y_perm = np.roll(index, cut_y)
+        cut_z = np.random.randint(low=head, high=tail)
+        z_perm = np.roll(index, cut_z)
+
+        Lc_perm = Lc[y_perm, y_perm[:, None]]
+        Mc_perm = Mc[z_perm, z_perm[:, None]]
+        statistics[i] = 1 / (m ** 2) * np.sum(Kc * Lc_perm * Mc_perm)
+
+    statistics_sort = np.sort(statistics)
+    critical_value = np.quantile(statistics_sort, 1 - alpha)
+    pval = (np.sum(stat_found <= statistics_sort) + 1) / (n_perms + 1)
+    return critical_value, pval
+
+
+def test_lancaster(k_list, data_list, n_perms=5000, alpha=0.05, mode='permutation'):
+    n_samples = k_list[0].shape[0]
+    if mode == 'permutation':
+        statistic = compute_lancaster_statistics(k_list)
+        critical_value, pval = lancaster_permutation(k_list, statistic, n_perms, alpha)
+        reject = int(statistic > critical_value)
+        return statistic, critical_value, pval, reject
+    if mode == 'shifting':
+        statistic = compute_lancaster_statistics(k_list)
+        critical_value, pval = lancaster_shifting(data_list, k_list, statistic, n_samples, n_perms, alpha)
+        reject = int(statistic > critical_value)
+        return statistic, critical_value, pval, reject
 
 #
 # def shifting_kernel(head, tail, k_list):
@@ -197,7 +234,7 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
     # statistic and threshold
     if mode == 'iid':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value, pval = permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
+        critical_value, pval = dhsic_permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, pval, reject
     if mode == 'stat_ts':

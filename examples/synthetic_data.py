@@ -40,13 +40,16 @@ def make_iid_example(mode, s=0.99, n_sample=100):
     if mode == 'factorisation':
         # P(XYZ) = P(X)P(Y,Z)
         mean = [0, 0, 0]
-        cov = [[1, 0, 0], [0, 1, s], [0, s, 1]]
+        cov = [[1, 0, 0],
+               [0, 1, s],
+               [0, s, 1]]
         d1, d2, d3 = np.random.multivariate_normal(mean, cov, n_sample).T
 
     if mode == 'check_factorisation':
-        # P(XYZ) = P(X)P(Y,Z)
         mean = [0, 0, 0]
-        cov = [[1, 0, s], [0, 1, s], [s, s, 1]]
+        cov = [[1, 0, s],
+               [0, 1, s],
+               [s, s, 1]]
         d1, d2, d3 = np.random.multivariate_normal(mean, cov, n_sample).T
 
     df = pd.DataFrame(list(zip(d1, d2, d3)), columns=['d1', 'd2', 'd3'])
@@ -76,9 +79,24 @@ def mixed_multinormal(n_sample=100, d=0.99, mode='addition'):
         d1 = (x[0] + y[0] + z[0]) / 3
         d2 = (x[1] + y[1] + z[1]) / 3
         d3 = (x[2] + y[2] + z[2]) / 3
+    if mode == 'addition2':
+        d1 = (x[0] + y[0]) / 2
+        d2 = (x[1] + y[1]) / 2
+        d3 = (x[2] + y[2]) / 2
+    if mode == 'weighted_addition':
+        d1 = (x[0] + z[0]) / 2
+        d2 = (x[1] + y[1]) / 2
+        d3 = (z[2] + y[2]) / 2
     if mode == 'mixture':
         idx = np.random.choice(3, (1, 1, n_sample))
         d = np.take_along_axis(np.stack([x, y, z]), idx, axis=0)
+        d1 = d[0, 0, :]
+        d2 = d[0, 1, :]
+        d3 = d[0, 2, :]
+
+    if mode == 'mixture2':
+        idx = np.random.choice(2, (1, 1, n_sample))
+        d = np.take_along_axis(np.stack([x, y]), idx, axis=0)
         d1 = d[0, 0, :]
         d2 = d[0, 1, :]
         d3 = d[0, 2, :]

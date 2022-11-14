@@ -35,7 +35,7 @@ def make_iid_example(mode, s=0.99, n_sample=100):
         y2 = np.random.binomial(n=1, p=0.5, size=n_sample)
         y3 = np.asarray([int(y1[i] == y2[i]) for i in range(len(y1))])
 
-        d1, d2, d3 = y1 + (1 - s) * x1, y2 + (1 - s) * x2, y3 + (1 - s) * x3
+        d1, d2, d3 = s * y1 + (1 - s) * x1, s * y2 + (1 - s) * x2, s * y3 + (1 - s) * x3
 
     if mode == 'factorisation':
         # P(XYZ) = P(X)P(Y,Z)

@@ -210,7 +210,7 @@ def test_lancaster(k_list, data_list, n_perms=5000, alpha=0.05, mode='permutatio
 #     return critical_value
 
 
-def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
+def test_independence(k_list, data_list, n_perms=5000, alpha=0.05, mode='permutation'):
     """
     Performs the independence test with dHSIC and returns an accept or reject statement
 
@@ -232,12 +232,12 @@ def test_independence(k_list, data_list, mode, n_perms=5000, alpha=0.05):
     n_variables = len(k_list)
     n_samples = k_list[0].shape[0]
     # statistic and threshold
-    if mode == 'iid':
+    if mode == 'permutation':
         statistic = compute_dHSIC_statistics(k_list)
         critical_value, pval = dhsic_permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, pval, reject
-    if mode == 'stat_ts':
+    if mode == 'shifting':
         statistic = compute_dHSIC_statistics(k_list)
         critical_value, pval = shifting(data_list, k_list, n_samples, n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)

@@ -98,9 +98,9 @@ def estimate_tail_head(data_list):
         raise ValueError('possibly long memory process, the output of test might be FALSE.')
     head = min(head, 50)
     tail = m
-    if (tail - head) < 100:
-        raise ValueError('using less than 100 points for a bootstrap approximation, stability of the test might be '
-                         'affected')
+    # if (tail - head) < 100:
+    #     raise ValueError('using less than 100 points for a bootstrap approximation, stability of the test might be '
+    #                      'affected')
     return head, tail
 
 

@@ -274,6 +274,41 @@ def nonstationary_ts_n(n_sample, t_time, d, mode, a=0.5, order=3):
         z_mat.append(z)
     return np.array(x_mat), np.array(y_mat), np.array(w_mat), np.array(z_mat)
 
+
+def nonstat_egs(n_sample, t_time, d, mode, a=0.5):
+    """
+    Returns nonstationary time series data that has higher-order interactions
+    """
+    # variables * time * n_sample
+    x_mat = []
+    y_mat = []
+    z_mat = []
+    for j in range(n_sample):
+        # np.random.seed(seed)
+        x = np.zeros(t_time)
+        y = np.zeros(t_time)
+        z = np.zeros(t_time)
+
+        x[0] = randn()
+        y[0] = randn()
+        z[0] = randn()
+        for i in range(1, t_time):
+            if mode == 'case2':
+                # linear trend
+                x[i] = a * x[i - 1] + randn() + i / 10
+                y[i] = a * y[i - 1] + randn() + i / 10
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + i / 10
+            if mode == 'case2.1':
+                # non-linear trend
+                x[i] = a * x[i - 1] + randn() + sin(i) ** 2
+                y[i] = a * y[i - 1] + randn() + cos(i) ** 2
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + sin(i) * cos(i)
+
+        x_mat.append(x)
+        y_mat.append(y)
+        z_mat.append(z)
+    return np.array(x_mat), np.array(y_mat), np.array(z_mat)
+
 # def ARIMA(phi=np.array([0]), theta=np.array([0]), d=0, t=0, mu=0, sigma=1, n=20, burn=100):
 #     """ Simulate data from ARMA model (eq. 1.2.4):
 #

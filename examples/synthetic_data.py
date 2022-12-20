@@ -2,7 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import pandas as pd
 # from statsmodels.tsa.arima_process import arma_generate_sample
-from numpy import sign, sin, cos, pi
+from numpy import sign, sin, cos, pi, log, exp
 from numpy.random import normal, randn
 
 
@@ -177,9 +177,9 @@ def stationary_pb_ts(t_time, d, mode, a=0.5, order=3):
             y[i] = a * y[i - 1] + randn()
             w[i] = a * w[i - 1] + randn()
 
-            if mode == 'case1':
-                # pairwise independent but 4-way jointly dependent
-                z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i] * w[i]) + randn()
+            # if mode == 'case1':
+            #     # pairwise independent but 4-way jointly dependent
+            #     z[i] = a * z[i - 1] + d * abs(randn()) * sign(x[i] * y[i] * w[i]) + randn()
             if mode == 'case2':
                 # 3 pairwise dependent and 4-way jointly dependent
                 z[i] = a * z[i - 1] + d * (x[i] + y[i] + w[i]) + randn()
@@ -190,38 +190,38 @@ def stationary_pb_ts(t_time, d, mode, a=0.5, order=3):
     return df
 
 
-def stationary_pb_ts_n(n_sample, t_time, d, mode, a=0.5):
-    # variables * time * n_sample
-    x_mat = []
-    y_mat = []
-    z_mat = []
-    for j in range(n_sample):
-        # np.random.seed(seed)
-        x = np.zeros(t_time)
-        y = np.zeros(t_time)
-        z = np.zeros(t_time)
-
-        x[0] = randn()
-        y[0] = randn()
-        z[0] = randn()
-        for i in range(1, t_time):
-            x[i] = a * x[i - 1] + randn()
-            y[i] = a * y[i - 1] + randn()
-            if mode == 'case1':
-                # pairwise independent but jointly dependent
-                z[i] = a * z[i - 1] + d * max(x[i], y[i]) + randn()
-            if mode == 'case2':
-                # 2 pairwise dependent and jointly dependent
-                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
-            if mode == 'case3':
-                # all independence
-                z[i] = a * z[i - 1] + randn()
-
-        x_mat.append(x)
-        y_mat.append(y)
-        z_mat.append(z)
-    # np.swapaxes(x_mat, 0, 1), np.swapaxes(y_mat, 0, 1), np.swapaxes(z_mat, 0, 1)
-    return np.array(x_mat), np.array(y_mat), np.array(z_mat)
+# def stationary_pb_ts_n(n_sample, t_time, d, mode, a=0.5):
+#     # variables * time * n_sample
+#     x_mat = []
+#     y_mat = []
+#     z_mat = []
+#     for j in range(n_sample):
+#         # np.random.seed(seed)
+#         x = np.zeros(t_time)
+#         y = np.zeros(t_time)
+#         z = np.zeros(t_time)
+#
+#         x[0] = randn()
+#         y[0] = randn()
+#         z[0] = randn()
+#         for i in range(1, t_time):
+#             x[i] = a * x[i - 1] + randn()
+#             y[i] = a * y[i - 1] + randn()
+#             if mode == 'case1':
+#                 # pairwise independent but jointly dependent
+#                 z[i] = a * z[i - 1] + d * max(x[i], y[i]) + randn()
+#             if mode == 'case2':
+#                 # 2 pairwise dependent and jointly dependent
+#                 z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn()
+#             if mode == 'case3':
+#                 # all independence
+#                 z[i] = a * z[i - 1] + randn()
+#
+#         x_mat.append(x)
+#         y_mat.append(y)
+#         z_mat.append(z)
+#     # np.swapaxes(x_mat, 0, 1), np.swapaxes(y_mat, 0, 1), np.swapaxes(z_mat, 0, 1)
+#     return np.array(x_mat), np.array(y_mat), np.array(z_mat)
 
 
 def nonstationary_ts_n(n_sample, t_time, d, mode, a=0.5, order=3):
@@ -293,17 +293,31 @@ def nonstat_egs(n_sample, t_time, d, mode, a=0.5):
         y[0] = randn()
         z[0] = randn()
         for i in range(1, t_time):
-            if mode == 'case2':
-                # linear trend
-                x[i] = a * x[i - 1] + randn() + i / 10
-                y[i] = a * y[i - 1] + randn() + i / 10
-                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + i / 10
+            # if mode == 'case2':
+            #     # linear trend let a=1 for non-stationarity
+            #     x[i] = a * x[i - 1] + randn() + i / 10
+            #     y[i] = a * y[i - 1] + randn() + i / 10
+            #     z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + i / 10
             if mode == 'case2.1':
-                # non-linear trend
+                # non-linear trend let a=1 for non-stationarity
+                x[i] = a * x[i - 1] + randn() - exp(-1/i)/100
+                y[i] = a * y[i - 1] + randn() - exp(-1/i)/100
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() - exp(-1/i)/100
+            if mode == 'case2.2':
+                # log with trig trend let a=1 for non-stationarity
+                x[i] = a * x[i - 1] + randn() + sin(i) ** 2 / log(i+1)
+                y[i] = a * y[i - 1] + randn() + cos(i) ** 2 / log(i+1)
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + sin(i) * cos(i) ** 2 / log(i+1)
+            if mode == 'case2.3':
+                # perturbation on the dependence part let a=1 for non-stationarity
                 x[i] = a * x[i - 1] + randn() + sin(i) ** 2
-                y[i] = a * y[i - 1] + randn() + cos(i) ** 2
-                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + sin(i) * cos(i)
-
+                y[i] = a * y[i - 1] + randn() + cos(i) ** 2 / log(i+1)
+                z[i] = a * z[i - 1] + d * exp(-10/i) * (x[i] + y[i]) + randn()
+            if mode == 'case1.1':
+                # nonstationary high order when a=0.8 checked
+                x[i] = a * x[i - 1] + i * sin(i) * randn()
+                y[i] = a * y[i - 1] + i * cos(i) * randn()
+                z[i] = a * z[i - 1] + d * i * sign(x[i] * y[i]) + normal(0, 0.25)
         x_mat.append(x)
         y_mat.append(y)
         z_mat.append(z)

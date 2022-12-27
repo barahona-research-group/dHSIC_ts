@@ -21,8 +21,7 @@ def compute_dHSIC_statistics(K):
     # Normalizing const: Prod(1/n^2) = 1/n^(2d)
     term2 = np.prod(np.mean(K, axis=(1, 2)))
     # Normalizing const: (1/n) Prod(1/n)=1/n^(d+1)
-    term3 = np.sum((2 / n_samples) * np.prod(np.mean(K, axis=1)))
-
+    term3 = (2 / n_samples) * np.sum(np.prod(np.mean(K, axis=2), axis=0))
     return term1 + term2 - term3
 
 
@@ -35,9 +34,7 @@ def compute_lancaster_statistics(k_list):
     Kc = H @ K @ H
     Lc = H @ L @ H
     Mc = H @ M @ H
-    statMatrix = Kc * Lc * Mc
-    lancaster = 1 / (m**2) * np.sum(statMatrix)
-    return lancaster
+    return np.mean(Kc * Lc * Mc)
 
 
 # def sq_distance(a, b):

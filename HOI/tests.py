@@ -10,48 +10,40 @@ import cProfile
 from examples.synthetic_data import make_iid_example
 
 
-def dhsic_permutation(k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
+def permute_K(K, n_perms, seed=0):
+    K_perms = []
+    for seed in np.random.SeedSequence(seed):
+        K_perm = np.zeros_like(K)
+        for d, sub_seed in enumerate(seed.spawn(K.shape[0])):
+            var_perm = np.random.permutation(K.shape[1])
+            K_perm[d, :, :] = K[d, var_perm, var_perm[:, None]]
+
+        K_perms.append(K_perm)
+
+    return K_perms
+
+
+def reject_H0(K0, K_perms, stat_fun, alpha=0.05):
     """
     Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
-
     "to do:"
     "1: include calc_stat as an input function"
-
-    # initiating statistics
-    statistics = np.zeros(n_perms)
-
-    for i in range(n_perms):
-        term1 = k_list[0]
-        term2 = np.sum(k_list[0]) / (n_samples ** 2)
-        term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples ** 2)
-
-        for j in range(1, n_variables):
-            index_perm = np.random.permutation(k_list[j].shape[0])
-            k_perm = k_list[j][index_perm, index_perm[:, None]]
-
-            term1 = term1 * k_perm
-            term2 = term2 * np.sum(k_perm) / (n_samples ** 2)
-            term3 = term3 * np.sum(k_perm, axis=0) / n_samples
-
-        term1_sum = np.sum(term1)
-        term3_sum = np.sum(term3)
-
-        statistics[i] = term1_sum / (n_samples ** 2) + term2 - term3_sum
-
-    statistics_sort = np.sort(statistics)
-    # computing 1-alpha critical value
-    ind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
-    critical_value = statistics_sort[ind]
-    pval = (np.sum(stat_found <= statistics_sort) + 1) / (n_perms + 1)
-    return critical_value, pval
+    s0 = stat_fun(K0)
+    stats = list(map(stat_fun, K_perms))
+    return (1 + sum(s >= s0 for s in stats)) / (1 + len(stats)) < alpha
 
 
-def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_perms=5000, alpha=0.05):
+def shifting(data_list,
+             k_list,
+             n_samples,
+             n_variables,
+             stat_found,
+             n_perms=5000,
+             alpha=0.05):
     """
     Approximates the null distribution by permuting all variables. Using Monte Carlo approximation.
     """
-
     "to do:"
 
     head, tail = estimate_tail_head(data_list)
@@ -59,8 +51,8 @@ def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_perms=5000
     index = range(0, n_samples)
     for i in range(n_perms):
         term1 = k_list[0]
-        term2 = np.sum(k_list[0]) / (n_samples ** 2)
-        term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples ** 2)
+        term2 = np.sum(k_list[0]) / (n_samples**2)
+        term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples**2)
 
         for j in range(1, n_variables):
             # choose a random number between head and tail
@@ -72,17 +64,18 @@ def shifting(data_list, k_list, n_samples, n_variables, stat_found, n_perms=5000
             k_perm = k_list[j][index_perm, index_perm[:, None]]
 
             term1 = term1 * k_perm
-            term2 = term2 * np.sum(k_perm) / (n_samples ** 2)
+            term2 = term2 * np.sum(k_perm) / (n_samples**2)
             term3 = term3 * np.sum(k_perm, axis=0) / n_samples
 
         term1_sum = np.sum(term1)
         term3_sum = np.sum(term3)
 
-        statistics[i] = term1_sum / (n_samples ** 2) + term2 - term3_sum
+        statistics[i] = term1_sum / (n_samples**2) + term2 - term3_sum
 
     statistics_sort = np.sort(statistics)
     # computing 1-alpha critical value
-    ind = np.sum(stat_found == statistics_sort) + int(np.ceil((1 - alpha) * (n_perms + 1)))
+    ind = np.sum(stat_found == statistics_sort) + int(
+        np.ceil((1 - alpha) * (n_perms + 1)))
     critical_value = statistics_sort[ind]
     pval = (np.sum(stat_found <= statistics_sort) + 1) / (n_perms + 1)
     return critical_value, pval
@@ -95,7 +88,8 @@ def estimate_tail_head(data_list):
     smallestACF = np.where(acf < 0.2)  # returns indices
     head = smallestACF[0][0]  # returns smallest index
     if head > min(75, m):
-        raise ValueError('possibly long memory process, the output of test might be FALSE.')
+        raise ValueError(
+            'possibly long memory process, the output of test might be FALSE.')
     head = min(head, 50)
     tail = m
     # if (tail - head) < 100:
@@ -120,7 +114,7 @@ def lancaster_permutation(k_list, stat_found, n_perms=5000, alpha=0.05):
         z_perm = np.random.permutation(Kc.shape[0])
         Lc_perm = Lc[y_perm, y_perm[:, None]]
         Mc_perm = Mc[z_perm, z_perm[:, None]]
-        statistics[i] = 1 / (m ** 2) * np.sum(Kc * Lc_perm * Mc_perm)
+        statistics[i] = 1 / (m**2) * np.sum(Kc * Lc_perm * Mc_perm)
 
     statistics_sort = np.sort(statistics)
     critical_value = np.quantile(statistics_sort, 1 - alpha)
@@ -128,7 +122,12 @@ def lancaster_permutation(k_list, stat_found, n_perms=5000, alpha=0.05):
     return critical_value, pval
 
 
-def lancaster_shifting(data_list, k_list, stat_found, n_samples, n_perms=5000, alpha=0.05):
+def lancaster_shifting(data_list,
+                       k_list,
+                       stat_found,
+                       n_samples,
+                       n_perms=5000,
+                       alpha=0.05):
     head, tail = estimate_tail_head(data_list)
     index = range(0, n_samples)
 
@@ -150,7 +149,7 @@ def lancaster_shifting(data_list, k_list, stat_found, n_samples, n_perms=5000, a
 
         Lc_perm = Lc[y_perm, y_perm[:, None]]
         Mc_perm = Mc[z_perm, z_perm[:, None]]
-        statistics[i] = 1 / (m ** 2) * np.sum(Kc * Lc_perm * Mc_perm)
+        statistics[i] = 1 / (m**2) * np.sum(Kc * Lc_perm * Mc_perm)
 
     statistics_sort = np.sort(statistics)
     critical_value = np.quantile(statistics_sort, 1 - alpha)
@@ -158,18 +157,25 @@ def lancaster_shifting(data_list, k_list, stat_found, n_samples, n_perms=5000, a
     return critical_value, pval
 
 
-def test_lancaster(k_list, data_list, n_perms=5000, alpha=0.05, mode='permutation'):
+def test_lancaster(k_list,
+                   data_list,
+                   n_perms=5000,
+                   alpha=0.05,
+                   mode='permutation'):
     n_samples = k_list[0].shape[0]
     if mode == 'permutation':
         statistic = compute_lancaster_statistics(k_list)
-        critical_value, pval = lancaster_permutation(k_list, statistic, n_perms, alpha)
+        critical_value, pval = lancaster_permutation(k_list, statistic,
+                                                     n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, pval, reject
     if mode == 'shifting':
         statistic = compute_lancaster_statistics(k_list)
-        critical_value, pval = lancaster_shifting(data_list, k_list, statistic, n_samples, n_perms, alpha)
+        critical_value, pval = lancaster_shifting(data_list, k_list, statistic,
+                                                  n_samples, n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, pval, reject
+
 
 #
 # def shifting_kernel(head, tail, k_list):
@@ -210,7 +216,11 @@ def test_lancaster(k_list, data_list, n_perms=5000, alpha=0.05, mode='permutatio
 #     return critical_value
 
 
-def test_independence(k_list, data_list, n_perms=5000, alpha=0.05, mode='permutation'):
+def test_independence(k_list,
+                      data_list,
+                      n_perms=5000,
+                      alpha=0.05,
+                      mode='permutation'):
     """
     Performs the independence test with dHSIC and returns an accept or reject statement
 
@@ -223,7 +233,6 @@ def test_independence(k_list, data_list, n_perms=5000, alpha=0.05, mode='permuta
     Returns:
     reject: 1 if null rejected, 0 if null not rejected
     """
-
     """
     To do:
     1. add if conditions to import the right stats/test
@@ -234,12 +243,15 @@ def test_independence(k_list, data_list, n_perms=5000, alpha=0.05, mode='permuta
     # statistic and threshold
     if mode == 'permutation':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value, pval = dhsic_permutation(k_list, n_samples, n_variables, statistic, n_perms, alpha)
+        critical_value, pval = dhsic_permutation(k_list, n_samples,
+                                                 n_variables, statistic,
+                                                 n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, pval, reject
     if mode == 'shifting':
         statistic = compute_dHSIC_statistics(k_list)
-        critical_value, pval = shifting(data_list, k_list, n_samples, n_variables, statistic, n_perms, alpha)
+        critical_value, pval = shifting(data_list, k_list, n_samples,
+                                        n_variables, statistic, n_perms, alpha)
         reject = int(statistic > critical_value)
         return statistic, critical_value, pval, reject
     # if mode == 'stat_ts_n':
@@ -247,6 +259,7 @@ def test_independence(k_list, data_list, n_perms=5000, alpha=0.05, mode='permuta
     #     critical_value = permutation_stationary_ts(np.sum(data_list, axis=0), k_list, alpha=0.05)
     #     reject = int(statistic > critical_value)
     #     return statistic, critical_value, reject
+
 
 #
 # def bootstrap_series(length, n_bootstrap):

@@ -1,34 +1,29 @@
 import numpy as np
 
 
-def compute_dHSIC_statistics(k_list):
+def compute_dHSIC_statistics(K):
     """
     Computes the dHSIC statistic
 
     Parameters
     ----------
-    k_list: kernel lists. each entry is kernel matrices for each variable
+    K: kernel lists stacked along 0-axis.
+        Each K[i, :, :] entry is a kernel matrix for i-th variable.
 
     Returns
     -------
     single value for dHSIC statistic
     """
 
-    n_variables = len(k_list)
-    n_samples = k_list[0].shape[0]
+    n_samples = K.shape[1]
 
-    term1 = k_list[0]
-    term2 = np.sum(k_list[0]) / (n_samples ** 2)
-    term3 = 2 * np.sum(k_list[0], axis=0) / (n_samples ** 2)
-    for j in range(1, n_variables):
-        term1 = term1 * k_list[j]
-        term2 = term2 * np.sum(k_list[j]) / (n_samples ** 2)
-        term3 = term3 * np.sum(k_list[j], axis=0) / n_samples
+    term1 = np.mean(np.prod(K, axis=0))
+    # Normalizing const: Prod(1/n^2) = 1/n^(2d)
+    term2 = np.prod(np.mean(K, axis=(1, 2)))
+    # Normalizing const: (1/n) Prod(1/n)=1/n^(d+1)
+    term3 = np.sum((2 / n_samples) * np.prod(np.mean(K, axis=1)))
 
-    term1_sum = np.sum(term1)
-    term3_sum = np.sum(term3)
-    dHSIC = term1_sum / (n_samples ** 2) + term2 - term3_sum
-    return dHSIC
+    return term1 + term2 - term3
 
 
 def compute_lancaster_statistics(k_list):
@@ -41,8 +36,9 @@ def compute_lancaster_statistics(k_list):
     Lc = H @ L @ H
     Mc = H @ M @ H
     statMatrix = Kc * Lc * Mc
-    lancaster = 1/(m**2) * np.sum(statMatrix)
+    lancaster = 1 / (m**2) * np.sum(statMatrix)
     return lancaster
+
 
 # def sq_distance(a, b):
 #     aa = np.multiply(a, a)
@@ -76,25 +72,3 @@ def compute_lancaster_statistics(k_list):
 #     Lc = H @ L @ H
 #     statMatrix = Kc * Lc
 #     return statMatrix
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

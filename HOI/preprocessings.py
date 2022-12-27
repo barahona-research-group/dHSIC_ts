@@ -27,20 +27,25 @@ def compute_kernel(df):
 
     for i in list(data_dict.keys()):
         data = np.array(data_dict[i]).reshape(-1, 1)
-        kernel_matrix = pairwise_kernels(data, metric='rbf', gamma=0.5 / (width(data) ** 2))
+        kernel_matrix = pairwise_kernels(data,
+                                         metric='rbf',
+                                         gamma=0.5 / (width(data)**2))
         kernel_dict[i] = kernel_matrix
 
     return data_dict, kernel_dict
 
 
-def compute_kernel_n(data_mat):
+def compute_kernel_n(X):
     # data preparation for individual variable matrices
     """
-    To do:
+    Args:
+        X: data matrix of shape (n, T)
     """
-    kernel_matrix = pairwise_kernels(data_mat, metric='rbf', gamma=0.5 / (width(data_mat) ** 2))
+    return pairwise_kernels(X, metric='rbf', gamma=0.5 / (width(X)**2))
 
-    return kernel_matrix
+
+def compute_kernel_mats(X_list):
+    return np.stack(list(map(compute_kernel_n, X_list)))
 
 
 def unpack_dict_info(kernel_dict):

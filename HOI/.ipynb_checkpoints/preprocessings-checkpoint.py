@@ -1,8 +1,6 @@
 # this is the file for making data
 import warnings
-
 import numpy as np
-import pandas as pd
 from sklearn.metrics import pairwise_kernels, pairwise_distances
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -22,7 +20,6 @@ def compute_kernel(df):
     # data preparation
     """
     To do:
-    1. input data type = pandas dataframe
     """
 
     data_dict = df.to_dict('list')
@@ -36,8 +33,15 @@ def compute_kernel(df):
     return data_dict, kernel_dict
 
 
-def unpack_dict_info(kernel_dict):
-    k_list = np.array(list(kernel_dict.values()))
-    n_variables = len(k_list)
-    n_samples = k_list[0].shape[0]
-    return k_list, n_variables, n_samples
+def compute_kernel_n(X):
+    # data preparation for individual variable matrices
+    """
+    Args:
+        X: data matrix of shape (n, T)
+    """
+    return pairwise_kernels(X, metric='rbf', gamma=0.5 / (width(X)**2))
+
+
+def compute_kernel_mats(X_list):
+    return np.stack(list(map(compute_kernel_n, X_list)))
+

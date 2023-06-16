@@ -293,11 +293,11 @@ def nonstat_egs(n_sample, t_time, d, mode, a=0.5):
         y[0] = randn()
         z[0] = randn()
         for i in range(1, t_time):
-            # if mode == 'case2':
-            #     # linear trend let a=1 for non-stationarity
-            #     x[i] = a * x[i - 1] + randn() + i / 10
-            #     y[i] = a * y[i - 1] + randn() + i / 10
-            #     z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + i / 10
+            if mode == 'case2':
+                # linear trend let a=1 for non-stationarity
+                x[i] = a * x[i - 1] + randn() + i / 10
+                y[i] = a * y[i - 1] + randn() + i / 10
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + i / 10
             if mode == 'case2.1':
                 # non-linear trend let a=1 for non-stationarity
                 x[i] = a * x[i - 1] + randn() - exp(-1/i)/100
@@ -307,7 +307,7 @@ def nonstat_egs(n_sample, t_time, d, mode, a=0.5):
                 # log with trig trend let a=1 for non-stationarity
                 x[i] = a * x[i - 1] + randn() + sin(i) ** 2 / log(i+1)
                 y[i] = a * y[i - 1] + randn() + cos(i) ** 2 / log(i+1)
-                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + sin(i) * cos(i) ** 2 / log(i+1)
+                z[i] = a * z[i - 1] + d * (x[i] + y[i]) + randn() + sin(i) * cos(i) / log(i+1)
             if mode == 'case2.3':
                 # perturbation on the dependence part let a=1 for non-stationarity
                 x[i] = a * x[i - 1] + randn() + sin(i) ** 2
@@ -318,6 +318,11 @@ def nonstat_egs(n_sample, t_time, d, mode, a=0.5):
                 x[i] = a * x[i - 1] + i * sin(i) * randn()
                 y[i] = a * y[i - 1] + i * cos(i) * randn()
                 z[i] = a * z[i - 1] + d * i * sign(x[i] * y[i]) + normal(0, 0.25)
+            if mode == 'case3':
+                # linear trend, independent and nonstationary
+                x[i] = a * x[i - 1] + randn() + i / 10
+                y[i] = a * y[i - 1] + randn() + i / 10
+                z[i] = a * z[i - 1] + randn() + i / 10
         x_mat.append(x)
         y_mat.append(y)
         z_mat.append(z)
